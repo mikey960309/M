@@ -144,14 +144,16 @@ main {
 /* 小螢幕 RWD 支援 */
 @media (max-width: 768px) {
     nav {
-        width: 100%;
-        height: auto;
-        position: relative;
+        width: 10em;
+        position: fixed;
+        top: 80px;
+        left: 0;
+        bottom: 0;
     }
 
     main {
-        margin-left: 0;
-        margin-top: 120px;
+        margin-left: 10em;
+        margin-top: 100px;
         padding: 15px;
     }
 

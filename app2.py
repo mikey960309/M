@@ -153,55 +153,85 @@ def search():
 
 
 @app.route('/user', methods=['GET', 'POST'])
-def user():
+def user_page():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
     success_message = None
-    error_message = None 
+    error_message = None
     user_comments = []
-
-    if request.method == 'POST':
-
-        name = request.form['name']
-        username = request.form['username']
-        phone = request.form['phone']
-        birth_year = request.form['birth_year']
-        birth_month = request.form['birth_month']
-        birth_day = request.form['birth_day']
-
-        try:
-            connection = mysql.connector.connect(**db_config)
-            cursor = connection.cursor()
-
-            sql = """=
-            UPDATE users
-            SET name = %s, username = %s, phone = %s, birth_year = %s, birth_month = %s, birth_day = %s
-            WHERE user_id = %s 
-            """
-            values = (name, username, phone, int(birth_year), int(birth_month), int(birth_day), session['user_id'])
-            cursor.execute(sql, values)
-            connection.commit()
-            success_message = '資料更新成功'
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-            error_message = '更新資料失敗'
-        finally:
-            if cursor:
-                cursor.close()
-            if connection and connection.is_connected():
-                connection.close()
 
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
 
-        sql = "SELECT name, username, birth_year, birth_month, birth_day, phone FROM users WHERE user_id = %s"
-        cursor.execute(sql, (session['user_id'],))
+        # POST: 處理更新
+        if request.method == 'POST':
+            name = request.form['name']
+            username = request.form['username']
+            phone = request.form['phone']
+            birth_year = request.form['birth_year']
+            birth_month = request.form['birth_month']
+            birth_day = request.form['birth_day']
+
+            update_sql = """
+                UPDATE users
+                SET name = %s, username = %s, phone = %s, birth_year = %s, birth_month = %s, birth_day = %s
+                WHERE user_id = %s
+            """
+            values = (name, username, phone, int(birth_year), int(birth_month), int(birth_day), session['user_id'])
+            cursor.execute(update_sql, values)
+            connection.commit()
+            success_message = '資料更新成功'
+
+        # GET: 取得個人資料與留言
+        user_sql = "SELECT name, username, birth_year, birth_month, birth_day, phone FROM users WHERE user_id = %s"
+        cursor.execute(user_sql, (session['user_id'],))
+        user_info = cursor.fetchone()
+
+        if user_info:
+            comments_sql = """
+                SELECT uc.comment_text, uc.timestamp, u.username
+                FROM user_comments uc
+                JOIN users u ON uc.user_id = u.user_id
+                WHERE uc.username = %s
+                ORDER BY uc.timestamp
+            """
+            cursor.execute(comments_sql, (user_info[1],))
+            user_comments = cursor.fetchall()
+        else:
+            user_info = ("未設定", None, None, None, None, session['user_id'])
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        error_message = '資料處理錯誤'
+    finally:
+        if cursor:
+            cursor.close()
+        if connection.is_connected():
+            connection.close()
+
+    return render_template('user_page.html',
+                           user_info=user_info,
+                           success_message=success_message,
+                           error_message=error_message,
+                           user_comments=user_comments)
+
+@app.route('/user/<username>')
+def public_user_page(username):
+    user_info = None
+    user_comments = []
+
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+
+        user_sql = "SELECT name, username, birth_year, birth_month, birth_day, phone FROM users WHERE username = %s"
+        cursor.execute(user_sql, (username,))
         user_info = cursor.fetchone()
 
         if user_info is None:
-            user_info = ("未設定", None, None, None, None, session['user_id'])
+            return render_template('error.html', error_message=f"使用者 '{username}' 不存在")
 
         comments_sql = """
             SELECT uc.comment_text, uc.timestamp, u.username
@@ -210,49 +240,52 @@ def user():
             WHERE uc.username = %s
             ORDER BY uc.timestamp
         """
-        cursor.execute(comments_sql, (user_info[1],))
+        cursor.execute(comments_sql, (username,))
         user_comments = cursor.fetchall()
 
     except mysql.connector.Error as err:
-        print(f"Error fetching user data: {err}")
-        error_message = '無法獲取用戶資料，請稍後再試'
+        print(f"Error: {err}")
+        return render_template('error.html', error_message='資料庫錯誤'), 500
     finally:
         if cursor:
             cursor.close()
         if connection.is_connected():
             connection.close()
 
-    return render_template('user_page.html', user_info=user_info, success_message=success_message, error_message=error_message, user_comments=user_comments)
+    return render_template('public_user_page.html',
+                           user_info=user_info,
+                           user_comments=user_comments)
 
 
-@app.route('/public_user')
-def public_user():
-    username = request.args.get('username')
-    if username:
-        try:
-            connection = mysql.connector.connect(**db_config)
-            cursor = connection.cursor()
+@app.route('/search_usernames')
+def search_usernames():
+    keyword = request.args.get('q', '').strip().lower()
+    if not keyword:
+        return jsonify([])
 
-            sql = "SELECT name, username, birth_year, birth_month, birth_day, phone FROM users WHERE username = %s"
-            cursor.execute(sql, (username,))
-            user_info = cursor.fetchone()
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        sql = """
+            SELECT username, name FROM users
+            WHERE LOWER(username) LIKE %s OR LOWER(name) LIKE %s
+            LIMIT 10
+        """
+        like_kw = f"%{keyword}%"
+        cursor.execute(sql, (like_kw, like_kw))
+        users = cursor.fetchall()
+        return jsonify(users)
 
-            if user_info is None:
-                return render_template('public_user_page.html', user_info=None)
-            else:
-                return render_template('public_user_page.html', user_info=user_info)
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-            return render_template('error.html', error_message='資料庫錯誤'), 500
-        finally:
-            if cursor:
-                cursor.close()
-            if connection and connection.is_connected():
-                connection.close()
+    except mysql.connector.Error as err:
+        print(f"Search error: {err}")
+        return jsonify([])
 
-    return redirect(url_for('user'))
-
-
+    finally:
+        if cursor:
+            cursor.close()
+        if connection.is_connected():
+            connection.close()
+            
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -734,65 +767,6 @@ def edit_case(id):
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤'), 500
-    finally:
-        if cursor:
-            cursor.close()
-        if connection and connection.is_connected():
-            connection.close()
-
-@app.route('/user/<username>')
-def user_profile(username):
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    
-    user_info = None
-    try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor()
-        sql = "SELECT name, birth_year, birth_month, birth_day, phone, username FROM users WHERE username = %s"
-        cursor.execute(sql, (username,))
-        user_info = cursor.fetchone()
-        if user_info is None:
-            return render_template('error.html', error_message=f"使用者 '{username}' 不存在")
-
-    except mysql.connector.Error as err:
-        print(f"Database error in user_profile: {err}")
-        return render_template('error.html', error_message='資料庫錯誤，請稍後再試')
-
-    except mysql.connector.Error as err:
-        print(f"Error: {err}")
-
-    finally:
-        if cursor:
-            cursor.close()
-        if connection and connection.is_connected():
-            connection.close()
-
-    return render_template('public_user_page.html', user_info=user_info)
-
-@app.route('/search_usernames')
-def search_usernames():
-    keyword = request.args.get('q', '').strip().lower()
-    if not keyword:
-        return jsonify([])
-
-    try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
-        sql = """
-            SELECT username, name FROM users
-            WHERE LOWER(username) LIKE %s OR LOWER(name) LIKE %s
-            LIMIT 10
-        """
-        like_kw = f"%{keyword}%"
-        cursor.execute(sql, (like_kw, like_kw))
-        users = cursor.fetchall()
-        return jsonify(users)
-
-    except mysql.connector.Error as err:
-        print(f"Search error: {err}")
-        return jsonify([])
-
     finally:
         if cursor:
             cursor.close()

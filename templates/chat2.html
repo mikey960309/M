@@ -19,7 +19,26 @@
         <a href="{{ url_for('chat_list')}}">聊天室</a>
         <a href="{{ url_for('post') }}">刊登</a>
         <a href="{{ url_for('cus') }}">規劃行程</a>
-        <a href="{{ url_for('user') }}">個人頁面</a>
+        <a href="{{ url_for('user_page') }}">個人頁面</a>
+
+        <div style="margin: 80px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
+            <h3 style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
+            <form id="weather-form" style="display: flex; flex-direction: column; gap: 6px;">
+              <select id="city-select" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                <option value="Taipei">台北</option>
+                <option value="Tamsui" selected>淡水</option>
+                <option value="Kaohsiung">高雄</option>
+                <option value="Taichung">台中</option>
+                <option value="Hsinchu">新竹</option>
+                <option value="Tainan">台南</option>
+                <option value="Keelung">基隆</option>
+              </select>
+              <button type="submit" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                查詢
+              </button>
+            </form>
+            <div id="weather-result" style="font-size: 14px; margin-top: 8px; text-align: left; line-height: 1.6;"></div>
+          </div>
     </nav>
     <div class="chat-container">
         <div class="chat-box" id="chatBox">
@@ -98,6 +117,40 @@
                 resultDiv.innerHTML = `<a href="/chat/${username}">和 ${username} 聊天</a>`;
             }
         });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const weatherForm = document.getElementById("weather-form");
+            if (weatherForm) {
+                weatherForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+                const city = document.getElementById("city-select").value;
+
+                fetch("/weather", {
+                    method: "POST",
+                    body: new URLSearchParams({ city: city }),
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                    let resultDiv = document.getElementById("weather-result");
+                    if (data.error) {
+                        resultDiv.innerHTML = `<p style="color: red;"> ${data.error}</p>`;
+                    } else {
+                        resultDiv.innerHTML = `
+                        🌡 ${data.temp}°C<br>
+                        ☁️ ${data.description}<br>
+                        💧 ${data.humidity}%<br>
+                        🌬 ${data.wind_speed} m/s
+                        `;
+                    }
+                    })
+                    .catch(error => {
+                    console.error("查詢錯誤:", error);
+                    document.getElementById("weather-result").innerHTML = "❌ 無法取得資料";
+                    });
+                });
+            }
+            });
     </script>
 </body>
 </html>
