@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/case.css') }}?v=1.0">
+    <title>{{ itinerary[1] }}</title> <!-- itinerary[1] 是行程名稱 -->
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">首頁</a>
+        <a href="{{ url_for('chat_list')}}">聊天室</a>
+        <a href="{{ url_for('post') }}">刊登</a>
+        <a href="{{ url_for('cus') }}">規劃行程</a>
+        <a href="{{ url_for('user') }}">個人頁面</a>
+    </nav>
+    <header>
+        <h1>{{ itinerary[1] }}</h1>
+        <div class="auth-links">
+            <a href="/logout">登出</a>
+        </div>
+    </header>
+    
+    <main>
+        <h2>{{ itinerary[1] }}</h2> <!-- 行程名稱 -->
+        <p><strong>導遊：</strong>{{ itinerary[8] or '未知導遊' }}</p>
+        <p><strong>時間：</strong>{{ itinerary[2] }} ~ {{ itinerary[3] }}</p>
+        <p><strong>價格：</strong>NT${{ itinerary[5] }}</p>
+        <p><strong>地點：</strong>{{ itinerary[6] | join(', ') }}</p>
+        <p><strong>簡介：</strong></p>
+        <p>{{ itinerary[4] }}</p>
+    
+        {% if itinerary[7] %}
+            <h3>行程照片：</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                {% for photo in itinerary[7] %}
+                    <img src="{{ url_for('static', filename=photo) }}" alt="行程照片" style="width: 500px; height: auto;">
+                {% endfor %}
+            </div>
+        {% endif %}
+    
+        <a href="{{ url_for('edit_case', id=itinerary[0]) }}" class="edit-button">編輯此行程</a>
+    </main>
+
+    <div class="comment-area">
+        <h3>留言區</h3>
+        <div id="comments"></div>
+        
+        <form id="comment-form" class="comment-input" method="POST" action="/add_comment/{{ itinerary[0] }}">
+            <textarea name="comment" placeholder="留下你的留言..." required></textarea>
+            <button type="submit">送出</button>
+        </form>
+    </div>
+
+    <script>
+        // 使用 itinerary[0] 作為行程 ID
+        const itineraryId = "{{ itinerary[0] }}";
+    
+        // 加載留言的函數
+        function loadComments() {
+            fetch(`/get_comments/${itineraryId}`)
+                .then(response => response.json())
+                .then(comments => {
+                    const commentsDiv = document.getElementById('comments');
+                    commentsDiv.innerHTML = ''; // 清空現有留言
+                    comments.forEach(comment => {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.textContent = `${comment.username}: ${comment.comment_text} (時間: ${new Date(comment.timestamp).toLocaleString()})`;
+                        commentsDiv.appendChild(commentDiv);
+                    });
+                })
+                .catch(error => console.error('Error loading comments:', error));
+        }
+    
+        // 提交留言的處理函數
+        document.getElementById('comment-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // 防止表單默認提交
+    
+            const comment = this.comment.value; // 獲取留言內容
+    
+            fetch(`/add_comment/${itineraryId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ comment: comment }) // 將留言內容轉為 JSON
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    loadComments(); // 重新載入留言以顯示最新留言
+                    this.reset(); // 清空表單
+                } else {
+                    alert(data.error || '留言失敗');
+                }
+            })
+            .catch(error => console.error('Error adding comment:', error));
+        });
+    
+        // 頁面加載時加載留言
+        window.onload = loadComments;
+    </script>
+</body>
+</html>

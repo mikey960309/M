@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/chat_list.css') }}?v=1.0">
+        <title>聊天 - 旅遊推薦系統</title>
+    </head>
+    <body>
+        <header>
+            <h1>選擇聊天對象</h1>
+            <div class="auth-links">
+                <a href="/logout">登出</a>
+            </div>
+        </header>
+
+        <nav>
+            <a href="{{ url_for('index') }}">首頁</a>
+            <a href="{{ url_for('chat_list')}}">聊天室</a>
+            <a href="{{ url_for('post') }}">刊登</a>
+            <a href="{{ url_for('cus') }}">規劃行程</a>
+            <a href="{{ url_for('user') }}">個人頁面</a>
+        </nav>
+        
+        <div class="search-bar">
+            <form id="search-form">
+                <input type="text" id="user-search" placeholder="搜尋使用者名稱或暱稱...">
+                <button type="submit" id="search-button">搜尋</button>
+            </form>
+        </div>
+        
+        <main>
+            <div class="user-lists">
+                <div class="all-users">
+                    <h2>所有使用者</h2>
+                    <ul id="user-list">
+                        {% for username, name in users %}
+                            <li><a href="{{ url_for('chat', username=username) }}">{{ username }} ({{ name }})</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+        
+                <div class="search-results">
+                    <h2>搜尋結果</h2>
+                    <ul id="search-result-list"></ul>
+                </div>
+            </div>
+        </main>
+    </body>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("search-form");
+            const input = document.getElementById("user-search");
+            const resultList = document.getElementById("search-result-list");
+        
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                const keyword = input.value.trim().toLowerCase();
+                resultList.innerHTML = "";
+        
+                if (!keyword) return;
+        
+                const allUsers = document.querySelectorAll("#user-list li");
+        
+                allUsers.forEach(li => {
+                    const text = li.textContent.toLowerCase();
+                    if (text.includes(keyword)) {
+                        const clone = li.cloneNode(true); // 複製 li
+                        resultList.appendChild(clone);
+                    }
+                });
+        
+                if (resultList.children.length === 0) {
+                    resultList.innerHTML = "<li>沒有符合的使用者</li>";
+                }
+            });
+        });
+        </script>
+</html>

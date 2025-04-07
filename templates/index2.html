@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}?v=1.0">
+    <title>旅遊推薦系統</title>
+</head>
+
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">首頁</a>
+        <a href="{{ url_for('chat_list')}}">聊天室</a>
+        <a href="{{ url_for('post') }}">刊登</a>
+        <a href="{{ url_for('cus') }}">規劃行程</a>
+        <a href="{{ url_for('user') }}">個人頁面</a>
+    </nav>
+    <div>
+        <header>
+            <h1>旅遊推薦系統</h1>
+            <div class="auth-links">
+                <a href="/logout">登出</a>
+            </div>
+        </header>
+    </div>
+
+    <main>
+        <div class="search-bar">
+            <form id="search-form">
+                <button type="submit" id="search-button">搜尋</button>
+                <input type="text" id="search-input" placeholder="搜尋行程名稱或景點...">
+            </form>
+            <div id="search-results" class="search-results"></div>
+        </div>
+
+
+        {% if itineraries %}
+            {% for itinerary in itineraries %}
+                <div class="itinerary-container">
+                    <div class="itinerary-image">
+                        {% if itinerary.photos %}
+                            {# 假設 itinerary.photos 已為列表格式 #}
+                            <img src="{{ url_for('static', filename=itinerary.photos[0]) }}" alt="景點照片">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='pic/default.jpg') }}" alt="預設照片">
+                        {% endif %}
+                    </div>
+                    <div class="itinerary-details">
+                        <h2>{{ itinerary.name }}</h2>
+                        <p><strong>導遊：</strong>{{ itinerary.username }}</p>
+                        <p><strong>期間：</strong>{{ itinerary.start }} ~ {{ itinerary.end }}</p>
+                        <p><strong>價格：</strong>NT${{ itinerary.price }}</p>
+                        <p><strong>簡介：</strong>{{ itinerary.desc }}</p>
+                        <p class="location"><strong>景點：</strong>{{ itinerary.locations | join(', ') }}</p>
+                        <a href="{{ url_for('case', id=itinerary.id) }}" class="view-link">查看詳細</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>目前尚無行程。</p>
+        {% endif %}
+    </main>
+</body>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const input = document.getElementById("search-input");
+        const results = document.getElementById("search-results");
+    
+        input.addEventListener("input", function () {
+            const query = input.value.trim();
+            if (query.length === 0) {
+                results.innerHTML = "";
+                return;
+            }
+    
+            fetch(`/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    results.innerHTML = "";
+                    if (data.length === 0) {
+                        results.innerHTML = "<p>沒有相關行程</p>";
+                        return;
+                    }
+    
+                    data.forEach(itinerary => {
+                        const div = document.createElement("div");
+                        div.classList.add("search-item");
+                        div.innerHTML = `
+                            <a href="/case/${itinerary.id}">
+                                <strong>${itinerary.itinerary_name}</strong><br>
+                                景點：${itinerary.locations.join(", ")}
+                            </a>
+                        `;
+                        results.appendChild(div);
+                    });
+                });
+        });
+    });
+    </script>
+
+</html>

@@ -1,0 +1,60 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    max-width: 400px;
+    margin: 100px auto;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+h2 {
+    color: #0062cc;
+    font-size: 30px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+button {
+    background-color: #ff9900;
+    color: #fff;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+}
+button:hover {
+    background-color: #e68a00;
+}
+a {
+    color: #0062cc;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+.register-link {
+    text-align: center;
+    margin-top: 20px;
+}
+.error-message {
+    color: #ff0000;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 10px;
+}

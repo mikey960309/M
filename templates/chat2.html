@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}?v=1.0">
+    <title>聊天 - 旅遊推薦系統</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>聊天室</h1>
+        <div class="auth-links">
+            <a href="/logout">登出</a>
+        </div>
+    </header>
+    <nav>
+        <a href="{{ url_for('index') }}">首頁</a>
+        <a href="{{ url_for('chat_list')}}">聊天室</a>
+        <a href="{{ url_for('post') }}">刊登</a>
+        <a href="{{ url_for('cus') }}">規劃行程</a>
+        <a href="{{ url_for('user') }}">個人頁面</a>
+    </nav>
+    <div class="chat-container">
+        <div class="chat-box" id="chatBox">
+            {% for message in chat_messages %}
+                <p class="{% if message[0] == session['user_id'] %}message-right{% else %}message-left{% endif %}">
+                    <strong>{% if message[0] == session['user_id'] %}{{message[4]}}{% else %} {{message[4]}} {% endif %}:</strong> 
+                    {{ message[2] }} <small>{{ message[3] }}</small>
+                </p>
+            {% endfor %}
+        </div>
+        
+        <form id="messageForm" class="chat-input">
+            <input type="hidden" id="recipientId" value="{{ recipient_id }}">
+            <input type="text" id="messageInput" placeholder="輸入訊息..." required>
+            <button type="submit">送出</button>
+        </form>
+        
+    </div>
+
+    <script>
+        const socket = io();
+
+        // 頁面載入時滾到底部
+        window.onload = function() {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+
+        document.getElementById('messageForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const message = document.getElementById('messageInput').value;
+            const recipientId = '{{ recipient_id }}';
+
+            if (message.trim() !== "") {
+                // 先在本地顯示訊息
+                const chatBox = document.getElementById('chatBox');
+                const messageElement = document.createElement('p');
+                messageElement.className = 'message-right';
+                messageElement.innerHTML = `<strong>你:</strong> ${message} <small>剛剛</small>`;
+                chatBox.appendChild(messageElement);
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // 發送訊息到後端
+                socket.emit('send_message', { message: message, recipient_id: recipientId });
+
+                // 清空輸入框
+                document.getElementById('messageInput').value = '';
+            }
+        });
+
+        socket.on('receive_message', function(data) {
+            console.log('New message received:', data);
+            const chatBox = document.getElementById('chatBox');
+
+            if (data.user_id == '{{ recipient_id }}' || data.recipient_id == '{{ session["user_id"] }}') {
+                const messageElement = document.createElement('p');
+                messageElement.className = (data.user_id == '{{ session["user_id"] }}') ? 'message-right' : 'message-left';
+                messageElement.innerHTML = `<strong>${data.user_id == '{{ session["user_id"] }}' ? '你' : '對方'}:</strong> ${data.message} <small>${data.timestamp}</small>`;
+                chatBox.appendChild(messageElement);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        });
+
+        // 搜尋用戶並建立聊天連結
+        document.getElementById('searchUserForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = event.target.username.value;
+            
+            if (username) {
+                const resultDiv = document.getElementById('searchResult');
+                resultDiv.innerHTML = `<a href="/chat/${username}">和 ${username} 聊天</a>`;
+            }
+        });
+    </script>
+</body>
+</html>

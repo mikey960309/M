@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <title>刊登 - 旅遊推薦系統</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/post.css') }}?v=1.0">
+</head>
+<body>
+    <header>
+        <h1>刊登畫面</h1>
+        <div class="auth-links">
+            <a href="/logout">登出</a>
+        </div>
+    </header>
+    <nav>
+        <a href="{{ url_for('index') }}">首頁</a>
+        <a href="{{ url_for('chat_list') }}">聊天室</a>
+        <a href="{{ url_for('post') }}">刊登</a>
+        <a href="{{ url_for('cus') }}">規劃行程</a>
+        <a href="{{ url_for('user') }}">個人頁面</a>
+    </nav>
+    <main>
+        <div class="form-container">
+            <!-- 左欄：基本資料 -->
+            <div class="form-left">
+                <h2>刊登行程</h2>
+        
+                <input type="text" name="itinerary_name" placeholder="行程名稱" required>
+        
+                <label for="start_time">開始時間：</label>
+                <input type="datetime-local" name="start_time" required>
+        
+                <label for="end_time">結束時間：</label>
+                <input type="datetime-local" name="end_time" required>
+        
+                <label for="location">地址：</label>
+                <div class="location-input">
+                    <input type="text" id="location" name="location" placeholder="地址" required>
+                    <button type="button" onclick="searchAddress()">查詢</button>
+                </div>
+        
+                <label>選擇出發點（點擊地圖）</label>
+                <div id="map"></div>
+        
+                <input type="number" id="longitude" name="longitude" step="0.000001" placeholder="經度" required>
+                <input type="number" id="latitude" name="latitude" step="0.000001" placeholder="緯度" required>
+            </div>
+        
+            <!-- 右欄：詳細內容 -->
+            <div class="form-right">
+                <label for="description">景點介紹：</label>
+                <textarea name="description" rows="6" placeholder="請輸入景點介紹..." required></textarea>
+        
+                <label for="price">價錢：</label>
+                <input type="number" name="price" placeholder="價錢" required>
+        
+                <label for="photos">添加景點照片：</label>
+                <input type="file" name="photos" accept="image/*" multiple>
+        
+                <button type="submit">提交</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const map = L.map('map').setView([25.033964, 121.564472], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap 貢獻者'
+        }).addTo(map);
+
+        let marker;
+        map.on('click', function (e) {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+        });
+
+        function searchAddress() {
+            const address = document.getElementById('location').value.trim();
+            if (!address) {
+                alert("請輸入地址");
+                return;
+            }
+
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent('台灣 ' + address)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        alert("找不到該地址");
+                        return;
+                    }
+
+                    const lat = parseFloat(data[0].lat).toFixed(6);
+                    const lon = parseFloat(data[0].lon).toFixed(6);
+
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lon;
+
+                    const latLng = L.latLng(lat, lon);
+                    map.setView(latLng, 15);
+
+                    if (marker) {
+                        marker.setLatLng(latLng);
+                    } else {
+                        marker = L.marker(latLng).addTo(map);
+                    }
+                })
+                .catch(error => {
+                    console.error("地理編碼錯誤：", error);
+                    alert("地理編碼失敗，請稍後再試");
+                });
+        }
+    </script>
+</body>
+</html>

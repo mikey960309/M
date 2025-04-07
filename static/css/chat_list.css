@@ -1,0 +1,165 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header 區塊 */
+header {
+    position: fixed;
+    width: 100%;
+    height: 80px;
+    top: 0;
+    left: 0;
+    background-color: #0062cc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    z-index: 1000;
+}
+
+header h1 {
+    color: #ffffff;
+    margin-left: 20px;
+}
+
+header .auth-links {
+    margin-right: 20px;
+}
+
+header .auth-links a {
+    color: #fff;
+    text-decoration: none;
+    padding: 5px 10px;
+    background-color: #ff9900;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+header .auth-links a:hover {
+    background-color: #e68a00;
+}
+
+/* 側邊選單 */
+nav {
+    position: fixed;
+    width: 10em;
+    top: 80px;
+    left: 0;
+    bottom: 0;
+    background-color: #d2d2d2;
+    z-index: 900;
+    padding-top: 20px;
+}
+
+nav a {
+    display: block;
+    color: #7d7d7d;
+    text-decoration: none;
+    margin: 10px 20px;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+    background-color: #c0c0c0;
+}
+
+/* 主要內容區 */
+main {
+    margin-left: 10em;
+    margin-top: 100px;
+    padding: 20px;
+}
+
+/* 🔍 搜尋欄浮動在右上角 */
+.search-bar {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 999;
+}
+
+#search-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#user-search {
+    width: 200px;
+    padding: 10px 12px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+#user-search:focus {
+    border-color: #007BFF;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+}
+
+#search-button {
+    padding: 10px 16px;
+    font-size: 15px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#search-button:hover {
+    background-color: #0056b3;
+}
+
+/* 👥 使用者區塊：左右分欄 */
+.user-lists {
+    display: flex;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+.all-users, .search-results {
+    flex: 1;
+}
+
+.all-users h2,
+.search-results h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.all-users ul,
+.search-results ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.all-users li,
+.search-results li {
+    margin-bottom: 8px;
+}
+
+.all-users a,
+.search-results a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.all-users a:hover,
+.search-results a:hover {
+    color: #007BFF;
+}

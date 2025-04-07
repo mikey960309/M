@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cus.css') }}?v=1.0">
+    <title>旅遊推薦系統</title>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">首頁</a>
+        <a href="{{ url_for('chat_list')}}">聊天室</a>
+        <a href="{{ url_for('post') }}">刊登</a>
+        <a href="{{ url_for('cus') }}">規劃行程</a>
+        <a href="{{ url_for('user') }}">個人頁面</a>
+    </nav>
+    <div>
+        <header>
+            <h1>旅遊推薦系統</h1>
+            <div class="auth-links">
+                <a href="/logout">登出</a>
+            </div>
+        </header>
+    </div>
+    <main>
+      <div class="container">
+        <div class="left-section">
+          <!-- 地圖、輸入方案、排序、顯示行程 等等 -->
+          <div id="departure-point" class="card">
+            <h2>點選地圖以選擇出發點或自行輸入經緯度</h2>
+            <div id="map"></div>
+            <input type="text" id="start-longitude" placeholder="出發點經度" readonly />
+            <input type="text" id="start-latitude" placeholder="出發點緯度" readonly />
+          </div>
+    
+          <div id="itinerary-input" class="card">
+            <h2>輸入方案名稱</h2>
+            <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" />
+            <button onclick="addItinerary()">新增</button>
+            <div id="itinerary-list"></div>
+          </div>
+    
+          <div class="sort-button-container">
+            <button onclick="sortItinerary()">最佳排序</button>
+          </div>
+          <div id="sorted-itineraries" class="sorted-itineraries">
+            <div id="sorted-itinerary-list"></div>
+          </div>
+        </div>
+      </div>
+    
+      <!-- ✅ 推薦飯店移到 container 之外，會在下方顯示 -->
+      <div class="right-section">
+        <h2>推薦飯店：</h2>
+        <div class="hotel-recommendations" id="hotel-recommendations-display"></div>
+      </div>
+    </main>
+    
+      <script>
+        const hotelRecommendations = ['A', 'B', 'C', 'D', 'E'];
+        function displayHotelRecommendations() {
+          const display = document.getElementById('hotel-recommendations-display');
+          display.innerHTML = '';
+          hotelRecommendations.forEach(hotel => {
+            display.innerHTML += `<div class="hotel-item">${hotel}</div>`;
+          });
+        }
+        displayHotelRecommendations();
+    
+        const itineraries = [];
+    
+        async function addItinerary() {
+          const itineraryName = document.getElementById('itinerary-Name').value;
+          const response = await fetch(`/cus/AddItinerary/${itineraryName}`);
+    
+          if (!response.ok) {
+            alert("方案ID不存在或發生錯誤");
+            return;
+          }
+    
+          const itineraryData = await response.json();
+          displayItinerary(itineraryData);
+          itineraries.push(itineraryData);
+          displaySortedItineraries();
+        }
+    
+        function displayItinerary(itineraryData) {
+          if (itineraryData.error) {
+            alert(itineraryData.error);
+            return;
+          }
+    
+          const itineraryList = document.getElementById('itinerary-list');
+          const itineraryItem = document.createElement('div');
+          itineraryItem.classList.add('itinerary-item');
+          itineraryItem.innerHTML = `
+            <h3>${itineraryData.name}</h3>
+            <p>時間: ${itineraryData.start} ~ ${itineraryData.end}</p>
+            <p>介紹: ${itineraryData.desc}</p>
+            <p>價格: ${itineraryData.price}</p>
+            <p>地點: ${itineraryData.locations.join(', ')}</p>
+          `;
+          itineraryItem.dataset.id = itineraryData.id;
+          itineraryItem.dataset.latitude = itineraryData.latitude;
+          itineraryItem.dataset.longitude = itineraryData.longitude;
+          itineraryList.appendChild(itineraryItem);
+        }
+    
+        function displaySortedItineraries() {
+          const list = document.getElementById('sorted-itinerary-list');
+          list.innerHTML = '';
+          itineraries.forEach(itinerary => {
+            const item = document.createElement('div');
+            item.classList.add('itinerary-item');
+            item.innerHTML = `<h4>${itinerary.name}</h4>`;
+            list.appendChild(item);
+          });
+        }
+    
+        function sortItinerary() {
+          const startLatitude = document.getElementById("start-latitude").value;
+          const startLongitude = document.getElementById("start-longitude").value;
+          if (!startLatitude || !startLongitude) {
+            alert("請點選地圖選擇出發點！");
+            return;
+          }
+    
+          const itineraryItems = document.querySelectorAll("#itinerary-list .itinerary-item");
+          let itinerariesData = [];
+          const idToNameMap = {};
+    
+          itineraryItems.forEach(item => {
+            const id = item.dataset.id;
+            const latitude = item.dataset.latitude;
+            const longitude = item.dataset.longitude;
+            const name = item.querySelector('h3').innerText;
+    
+            if (id && latitude && longitude) {
+              itinerariesData.push({
+                id: parseInt(id),
+                latitude: parseFloat(latitude),
+                longitude: parseFloat(longitude)
+              });
+              idToNameMap[parseInt(id)] = name;
+            }
+          });
+    
+          fetch('/cus/ScheduleItinerary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              start_latitude: startLatitude,
+              start_longitude: startLongitude,
+              itineraries: itinerariesData
+            })
+          })
+            .then(response => response.json())
+            .then(data => {
+              if (data.error) {
+                alert(data.error);
+              } else {
+                const sortedItineraryList = document.getElementById('sorted-itinerary-list');
+                sortedItineraryList.innerHTML = '最佳排序：';
+                data.sorted_itinerary_ids.forEach(id => {
+                  const name = idToNameMap[id] || `ID:${id}`;
+                  const nameElem = document.createElement('div');
+                  nameElem.textContent = name;
+                  sortedItineraryList.appendChild(nameElem);
+                });
+              }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    
+        // Leaflet 地圖初始化
+        const map = L.map('map').setView([25.033964, 121.564472], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap 貢獻者'
+        }).addTo(map);
+    
+        let marker;
+        map.on('click', function (e) {
+          const lat = e.latlng.lat.toFixed(6);
+          const lng = e.latlng.lng.toFixed(6);
+          document.getElementById('start-latitude').value = lat;
+          document.getElementById('start-longitude').value = lng;
+    
+          if (marker) {
+            marker.setLatLng(e.latlng);
+          } else {
+            marker = L.marker(e.latlng).addTo(map);
+          }
+        });
+      </script>
+</body>
+</html>

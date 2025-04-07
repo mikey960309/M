@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入 - 旅遊推薦系統</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}?v=1.0">
+</head>
+<body>
+    <div class="container">
+        <h2>登入</h2>
+        {% if error_message %}
+        <div class="error-message">
+            {{ error_message }}
+        </div>
+        {% endif %}
+        <form action="{{ url_for('login') }}" method="POST">
+            <label for="username">帳號：</label>
+            <input type="text" id="username" name="username" placeholder="請輸入您的帳號" required>
+            <label for="password">密碼：</label>
+            <input type="password" id="password" name="password" placeholder="請輸入您的密碼" required>
+            <button type="submit">登入</button>
+        </form>
+        <div class="register-link">
+            還沒有帳號嗎？ <a href="{{ url_for('register') }}">註冊</a>
+        </div>
+    </div>
+</body>
+</html>
