@@ -4,70 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/case.css') }}?v=1.0">
-    <title>{{ itinerary[1] }}</title> <!-- itinerary[1] 是行程名稱 -->
+    <title class="translatable">{{ itinerary[1] }}</title> <!-- itinerary[1] 是行程名稱 -->
 </head>
 <body>
     <nav>
-        <a href="{{ url_for('index') }}">首頁</a>
-        <a href="{{ url_for('chat_list')}}">聊天室</a>
-        <a href="{{ url_for('post') }}">刊登</a>
-        <a href="{{ url_for('cus') }}">規劃行程</a>
-        <a href="{{ url_for('user_page') }}">個人頁面</a>
-
-        <div style="margin: 80px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
-            <h3 style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
+        <a href="{{ url_for('index') }}" class="translatable">首頁</a>
+        <a href="{{ url_for('chat_list')}}" class="translatable">聊天室</a>
+        <a href="{{ url_for('post') }}" class="translatable">刊登</a>
+        <a href="{{ url_for('cus') }}" class="translatable">規劃行程</a>
+        <a href="{{ url_for('user_page') }}" class="translatable">個人頁面</a>
+    
+        <div style="margin: 0px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
+            <h3 class="translatable" style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
             <form id="weather-form" style="display: flex; flex-direction: column; gap: 6px;">
               <select id="city-select" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-                <option value="Taipei">台北</option>
-                <option value="Tamsui" selected>淡水</option>
-                <option value="Kaohsiung">高雄</option>
-                <option value="Taichung">台中</option>
-                <option value="Hsinchu">新竹</option>
-                <option value="Tainan">台南</option>
-                <option value="Keelung">基隆</option>
+                <option value="Taipei" class="translatable">台北</option>
+                <option value="Tamsui" selected class="translatable">淡水</option>
+                <option value="Kaohsiung" class="translatable">高雄</option>
+                <option value="Taichung" class="translatable">台中</option>
+                <option value="Hsinchu" class="translatable">新竹</option>
+                <option value="Tainan" class="translatable">台南</option>
+                <option value="Keelung" class="translatable">基隆</option>
               </select>
-              <button type="submit" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              <button type="submit" class="translatable" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
                 查詢
               </button>
             </form>
             <div id="weather-result" style="font-size: 14px; margin-top: 8px; text-align: left; line-height: 1.6;"></div>
-          </div>
-    </nav>
-    <header>
-        <h1>{{ itinerary[1] }}</h1>
-        <div class="auth-links">
-            <a href="/logout">登出</a>
         </div>
-    </header>
+    
+        <div class="translate-box" style="margin: 20px auto; text-align: center;">
+            <select id="language-select" style="padding: 6px; border-radius: 4px;">
+              <option value="EN">English</option>
+              <option value="KO">한국인</option>
+              <option value="JA">日本語</option>
+              <option value="DE">Deutsch</option>
+              <option value="FR">Français</option>
+            </select>
+            <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
+                Translate
+            </button>
+        </div>
+      </nav>
+
+    <div>
+        <header>
+            <h1 class="translatable">個人頁面</h1>
+            <div class="auth-links">
+                <a href="/logout" >Logout</a>
+            </div>
+        </header>
+    </div>
     
     <main>
-        <h2>{{ itinerary[1] }}</h2> <!-- 行程名稱 -->
-        <p><strong>導遊：</strong>{{ itinerary[8] or '未知導遊' }}</p>
-        <p><strong>時間：</strong>{{ itinerary[2] }} ~ {{ itinerary[3] }}</p>
-        <p><strong>價格：</strong>NT${{ itinerary[5] }}</p>
-        <p><strong>地點：</strong>{{ itinerary[6] | join(', ') }}</p>
-        <p><strong>簡介：</strong></p>
+        <h2 class="translatable">{{ itinerary[1] }}</h2> <!-- 行程名稱 -->
+        <p><strong class="translatable">導遊：</strong>{{ itinerary[8] or '未知導遊' }}</p>
+        <p><strong class="translatable">時間：</strong>{{ itinerary[2] }} ~ {{ itinerary[3] }}</p>
+        <p><strong class="translatable">價格：</strong>NT${{ itinerary[5] }}</p>
+        <p><strong class="translatable">地點：</strong>{{ itinerary[6] | join(', ') }}</p>
+        <p><strong class="translatable">簡介：</strong></p>
         <p>{{ itinerary[4] }}</p>
-    
+
         {% if itinerary[7] %}
-            <h3>行程照片：</h3>
+            <h3 class="translatable">行程照片：</h3>
             <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
                 {% for photo in itinerary[7] %}
                     <img src="{{ url_for('static', filename=photo) }}" alt="行程照片" style="width: 500px; height: auto;">
                 {% endfor %}
             </div>
         {% endif %}
-    
-        <a href="{{ url_for('edit_case', id=itinerary[0]) }}" class="edit-button">編輯此行程</a>
+
+        <a href="{{ url_for('edit_case', id=itinerary[0]) }}" class="edit-button translatable">編輯此行程</a>
     </main>
 
     <div class="comment-area">
-        <h3>留言區</h3>
+        <h3 class="translatable">留言區</h3>
         <div id="comments"></div>
-        
+
         <form id="comment-form" class="comment-input" method="POST" action="/add_comment/{{ itinerary[0] }}">
-            <textarea name="comment" placeholder="留下你的留言..." required></textarea>
-            <button type="submit">送出</button>
+            <textarea name="comment" placeholder="留下你的留言..." class="translatable" required></textarea>
+            <button type="submit" class="translatable">送出</button>
         </form>
     </div>
 
@@ -153,6 +169,55 @@
                 });
             }
             });
+            function translatePage() {
+                const targetLang = document.getElementById("language-select").value;
+                const elements = document.querySelectorAll(".translatable");
+
+                const texts = [];
+                const map = [];
+
+                elements.forEach(el => {
+                    if (el.tagName === "INPUT" && el.placeholder) {
+                        texts.push(el.placeholder);
+                        map.push({ el, type: "placeholder" });
+                    } else if (el.children.length === 0) {
+                        texts.push(el.textContent.trim());
+                        map.push({ el, type: "text" });
+                    }
+                });
+
+                fetch("/translate", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        text: texts.join("\n___SPLIT___\n"),
+                        target_lang: targetLang
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("翻譯錯誤：" + data.error);
+                    } else {
+                        const translated = data.translation.split("\n___SPLIT___\n");
+                        map.forEach((item, i) => {
+                            if (translated[i]) {
+                                if (item.type === "placeholder") {
+                                    item.el.placeholder = translated[i];
+                                } else {
+                                    item.el.textContent = translated[i];
+                                }
+                            }
+                        });
+
+                        // 確保天氣查詢表單還能用
+                        bindWeatherForm();
+                    }
+                })
+                .catch(error => console.error("翻譯錯誤:", error));
+            }
     </script>
 </body>
 </html>

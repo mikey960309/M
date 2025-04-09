@@ -3,42 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>註冊 - 旅遊推薦系統</title>
+    <title class="translatable">註冊 - 旅遊推薦系統</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}?v=1.0">
 </head>
 <body>
     <div class="container">
-        <h2>註冊</h2>
+        <h2 class="translatable">註冊</h2>
         <form action="{{ url_for('register') }}" method="POST">
-            <label for="name">姓名：</label>
-            <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required>
+            <label for="name" class="translatable">姓名：</label>
+            <input type="text" id="name" name="name" placeholder="請輸入您的姓名" class="translatable" required>
             
-            <label for="username">帳號：</label>
-            <input type="text" id="username" name="username" placeholder="請輸入您的帳號" required>
+            <label for="username" class="translatable">帳號：</label>
+            <input type="text" id="username" name="username" placeholder="請輸入您的帳號" class="translatable" required>
             
-            <label for="password">密碼：</label>
-            <input type="password" id="password" name="password" placeholder="請設置您的密碼" required>
+            <label for="password" class="translatable">密碼：</label>
+            <input type="password" id="password" name="password" placeholder="請設置您的密碼" class="translatable" required>
 
-            <label for="birth_year">出生年：</label>
-            <input type="number" id="birth_year" name="birth_year" placeholder="年" required style="width: 60px; display: inline-block;">
+            <label for="birth_year" class="translatable">出生年：</label>
+            <input type="number" id="birth_year" name="birth_year" placeholder="年" class="translatable" required style="width: 60px; display: inline-block;">
 
-            <label for="birth_month">出生月：</label>
-            <input type="number" id="birth_month" name="birth_month" placeholder="月" required min="1" max="12" style="width: 40px; display: inline-block;">
+            <label for="birth_month" class="translatable">出生月：</label>
+            <input type="number" id="birth_month" name="birth_month" placeholder="月" class="translatable" required min="1" max="12" style="width: 40px; display: inline-block;">
 
-            <label for="birth_day">出生日：</label>
-            <input type="number" id="birth_day" name="birth_day" placeholder="日" required min="1" max="31" style="width: 40px; display: inline-block;">
+            <label for="birth_day" class="translatable">出生日：</label>
+            <input type="number" id="birth_day" name="birth_day" placeholder="日" class="translatable" required min="1" max="31" style="width: 40px; display: inline-block;">
             
             <br>
             
-            <label for="phone">行動電話：</label>
-            <input type="tel" id="phone" name="phone" placeholder="請輸入您的行動電話" required>
+            <label for="phone" class="translatable">行動電話：</label>
+            <input type="tel" id="phone" name="phone" placeholder="請輸入您的行動電話" class="translatable" required>
             
-            <button type="submit">註冊</button>
+            <button type="submit" class="translatable">註冊</button>
         </form>
+
         <div class="login-link">
-            已經有帳號了？ <a href="{{ url_for('login') }}">登入</a><br>
-            若帳號名已存在則不會跳到登入頁面!請改用其他帳號名
+            <span class="translatable">已經有帳號了？</span> 
+            <a href="{{ url_for('login') }}" class="translatable">登入</a><br>
+            <span class="translatable">若帳號名已存在則不會跳到登入頁面!請改用其他帳號名</span>
+        </div>
+
+        <div class="translate-box" style="margin: 20px auto; text-align: center;">
+            <select id="language-select" style="padding: 6px; border-radius: 4px;">
+                <option value="EN">English</option>
+                <option value="KO">한국인</option>
+                <option value="JA">日本語</option>
+                <option value="DE">Deutsch</option>
+                <option value="FR">Français</option>
+            </select>
+            <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; width: 100px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
+                Translate
+            </button>
         </div>
     </div>
 </body>
+
+<script>
+    function translatePage() {
+              const targetLang = document.getElementById("language-select").value;
+              const elements = document.querySelectorAll(".translatable");
+
+              const texts = [];
+              const map = [];
+
+              elements.forEach(el => {
+                  if (el.tagName === "INPUT" && el.placeholder) {
+                      texts.push(el.placeholder);
+                      map.push({ el, type: "placeholder" });
+                  } else if (el.children.length === 0) {
+                      texts.push(el.textContent.trim());
+                      map.push({ el, type: "text" });
+                  }
+              });
+
+              fetch("/translate", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                      text: texts.join("\n___SPLIT___\n"),
+                      target_lang: targetLang
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.error) {
+                      alert("翻譯錯誤：" + data.error);
+                  } else {
+                      const translated = data.translation.split("\n___SPLIT___\n");
+                      map.forEach((item, i) => {
+                          if (translated[i]) {
+                              if (item.type === "placeholder") {
+                                  item.el.placeholder = translated[i];
+                              } else {
+                                  item.el.textContent = translated[i];
+                              }
+                          }
+                      });
+
+                      // 確保天氣查詢表單還能用
+                      bindWeatherForm();
+                  }
+              })
+              .catch(error => console.error("翻譯錯誤:", error));
+          }
+</script>
 </html>

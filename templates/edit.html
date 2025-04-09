@@ -4,70 +4,135 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/edit.css') }}?v=1.0">
-    <title>旅遊推薦系統</title>
+    <title class="translatable">旅遊推薦系統</title>
 </head>
 <body>
     <nav>
-        <a href="{{ url_for('index') }}">首頁</a>
-        <a href="{{ url_for('chat_list')}}">聊天室</a>
-        <a href="{{ url_for('post') }}">刊登</a>
-        <a href="{{ url_for('cus') }}">規劃行程</a>
-        <a href="{{ url_for('user') }}">個人頁面</a>
-    </nav>
-    <div>
+        <a href="{{ url_for('index') }}" class="translatable">首頁</a>
+        <a href="{{ url_for('chat_list')}}" class="translatable">聊天室</a>
+        <a href="{{ url_for('post') }}" class="translatable">刊登</a>
+        <a href="{{ url_for('cus') }}" class="translatable">規劃行程</a>
+        <a href="{{ url_for('user_page') }}" class="translatable">個人頁面</a>
+    
+        <div class="translate-box" style="margin: 20px auto; text-align: center;">
+            <select id="language-select" style="padding: 6px; border-radius: 4px;">
+              <option value="EN">English</option>
+              <option value="KO">한국인</option>
+              <option value="JA">日本語</option>
+              <option value="DE">Deutsch</option>
+              <option value="FR">Français</option>
+            </select>
+            <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
+                Translate
+            </button>
+        </div>
+      </nav>
+    
+      <div>
         <header>
-            <h1>編輯行程</h1>
+            <h1 class="translatable">旅遊推薦系統</h1>
             <div class="auth-links">
-                <a href="/logout">登出</a>
+                <a href="/logout" class="translatable">Logout</a>
             </div>
         </header>
     </div>
-    <div class = mid>
-        <h1>編輯行程</h1>
-        <form method="POST"  enctype="multipart/form-data">
-            <label>行程名稱:</label>
+    <div class="mid">
+        <h1 class="translatable">編輯行程</h1>
+        <form method="POST" enctype="multipart/form-data">
+            <label class="translatable">行程名稱:</label>
             <input type="text" name="itinerary_name" value="{{ itinerary.itinerary_name }}" required><br>
             
-            <label>開始時間:</label>
+            <label class="translatable">開始時間:</label>
             <input type="datetime-local" name="start_time" value="{{ itinerary.start_time }}" required><br>
             
-            <label>結束時間:</label>
+            <label class="translatable">結束時間:</label>
             <input type="datetime-local" name="end_time" value="{{ itinerary.end_time }}" required><br>
             
-            <label>地點:</label>
+            <label class="translatable">地點:</label>
             <input type="text" name="locations" value="{{ itinerary.locations }}" required><br>
-
-            <label>經度:</label>
+    
+            <label class="translatable">經度:</label>
             <input type="number" name="longitude" value="{{ itinerary.longitude }}" step="0.000001" min="-180" max="180" required><br>
-
-            <label>緯度:</label>
+    
+            <label class="translatable">緯度:</label>
             <input type="number" name="latitude" value="{{ itinerary.latitude }}" step="0.000001" min="-90" max="90" required><br>
     
-            <label>描述:</label>
+            <label class="translatable">描述:</label>
             <textarea name="description">{{ itinerary.description }}</textarea><br>
-        
-            <label>價格:</label>
+    
+            <label class="translatable">價格:</label>
             <input type="number" step="0.01" name="price" value="{{ itinerary.price }}" required><br>
             
-            <label>現有照片：</label><br>
+            <label class="translatable">現有照片：</label><br>
             <div class="photo-gallery">
                 {% for photo in itinerary.photos %}
                     <div class="photo-item">
-                        <img src="{{ url_for('static', filename=photo) }}" alt="照片">
-                        <label>
+                        <img src="{{ url_for('static', filename=photo) }}" alt="行程照片" class="translatable">
+                        <label class="translatable">
                             <input type="checkbox" name="keep_photos" value="{{ photo }}" checked> 保留
                         </label>
                     </div>
                 {% endfor %}
             </div><br>
-
-            <label>新增照片：</label>
+    
+            <label class="translatable">新增照片：</label>
             <input type="file" name="new_photos" multiple accept="image/*"><br>
-
-            <button type="submit">保存變更</button>
+    
+            <button type="submit" class="translatable">保存變更</button>
         </form>
     </div>
-
-    <a href="{{ url_for('index') }}">返回首頁</a>
+    
+    <a href="{{ url_for('index') }}" class="translatable">返回首頁</a>
 </body>
+
+<script>
+    function translatePage() {
+    const targetLang = document.getElementById("language-select").value;
+
+    const elements = document.querySelectorAll(".translatable");
+
+    const texts = [];
+    const map = [];
+
+    elements.forEach(el => {
+        // 只處理「沒有子元素的文字節點」來避免破壞結構
+        if (el.tagName === "INPUT" && el.placeholder) {
+            texts.push(el.placeholder);
+            map.push({ el, type: "placeholder" });
+        } else if (el.children.length === 0) {
+            texts.push(el.textContent.trim());
+            map.push({ el, type: "text" });
+        }
+    });
+
+    fetch("/translate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            text: texts.join("\n___SPLIT___\n"),
+            target_lang: targetLang
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert("翻譯錯誤：" + data.error);
+        } else {
+            const translated = data.translation.split("\n___SPLIT___\n");
+            map.forEach((item, i) => {
+                if (translated[i]) {
+                    if (item.type === "placeholder") {
+                        item.el.placeholder = translated[i];
+                    } else {
+                        item.el.textContent = translated[i];
+                    }
+                }
+            });
+        }
+    })
+    .catch(error => console.error("翻譯錯誤:", error));
+}
+</script>
 </html>

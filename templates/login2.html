@@ -3,27 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登入 - 旅遊推薦系統</title>
+    <title class="translatable">登入 - 旅遊推薦系統</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}?v=1.0">
 </head>
 <body>
     <div class="container">
-        <h2>登入</h2>
+        <h2 class="translatable">登入</h2>
+
         {% if error_message %}
-        <div class="error-message">
+        <div class="error-message translatable">
             {{ error_message }}
         </div>
         {% endif %}
+
         <form action="{{ url_for('login') }}" method="POST">
-            <label for="username">帳號：</label>
-            <input type="text" id="username" name="username" placeholder="請輸入您的帳號" required>
-            <label for="password">密碼：</label>
-            <input type="password" id="password" name="password" placeholder="請輸入您的密碼" required>
-            <button type="submit">登入</button>
+            <label for="username" class="translatable">帳號：</label>
+            <input type="text" id="username" name="username" placeholder="請輸入您的帳號" class="translatable" required>
+
+            <label for="password" class="translatable">密碼：</label>
+            <input type="password" id="password" name="password" placeholder="請輸入您的密碼" class="translatable" required>
+
+            <button type="submit" class="translatable">登入</button>
         </form>
+
         <div class="register-link">
-            還沒有帳號嗎？ <a href="{{ url_for('register') }}">註冊</a>
+            <span class="translatable">還沒有帳號嗎？</span>
+            <a href="{{ url_for('register') }}" class="translatable">註冊</a>
         </div>
+    
+        <div class="translate-box" style="margin: 20px auto; text-align: center;">
+            <select id="language-select" style="padding: 6px; border-radius: 4px;">
+            <option value="EN">English</option>
+            <option value="KO">한국인</option>
+            <option value="JA">日本語</option>
+            <option value="DE">Deutsch</option>
+            <option value="FR">Français</option>
+            </select>
+            <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; width: 100px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
+                Translate
+            </button>
+        </div>
+    
     </div>
+
+    
 </body>
+<script>
+    function translatePage() {
+              const targetLang = document.getElementById("language-select").value;
+              const elements = document.querySelectorAll(".translatable");
+
+              const texts = [];
+              const map = [];
+
+              elements.forEach(el => {
+                  if (el.tagName === "INPUT" && el.placeholder) {
+                      texts.push(el.placeholder);
+                      map.push({ el, type: "placeholder" });
+                  } else if (el.children.length === 0) {
+                      texts.push(el.textContent.trim());
+                      map.push({ el, type: "text" });
+                  }
+              });
+
+              fetch("/translate", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                      text: texts.join("\n___SPLIT___\n"),
+                      target_lang: targetLang
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.error) {
+                      alert("翻譯錯誤：" + data.error);
+                  } else {
+                      const translated = data.translation.split("\n___SPLIT___\n");
+                      map.forEach((item, i) => {
+                          if (translated[i]) {
+                              if (item.type === "placeholder") {
+                                  item.el.placeholder = translated[i];
+                              } else {
+                                  item.el.textContent = translated[i];
+                              }
+                          }
+                      });
+
+                      // 確保天氣查詢表單還能用
+                      bindWeatherForm();
+                  }
+              })
+              .catch(error => console.error("翻譯錯誤:", error));
+          }
+</script>
 </html>

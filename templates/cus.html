@@ -10,105 +10,117 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/cus.css') }}?v=1.0">
-    <title>旅遊推薦系統</title>
+    <title class="translatable">旅遊推薦系統</title>
 </head>
 <body>
-    <nav>
-        <a href="{{ url_for('index') }}">首頁</a>
-        <a href="{{ url_for('chat_list')}}">聊天室</a>
-        <a href="{{ url_for('post') }}">刊登</a>
-        <a href="{{ url_for('cus') }}">規劃行程</a>
-        <a href="{{ url_for('user_page') }}">個人頁面</a>
+  <nav>
+    <a href="{{ url_for('index') }}" class="translatable">首頁</a>
+    <a href="{{ url_for('chat_list')}}" class="translatable">聊天室</a>
+    <a href="{{ url_for('post') }}" class="translatable">刊登</a>
+    <a href="{{ url_for('cus') }}" class="translatable">規劃行程</a>
+    <a href="{{ url_for('user_page') }}" class="translatable">個人頁面</a>
 
-        <div style="margin: 80px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
-          <h3 style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
-          <form id="weather-form" style="display: flex; flex-direction: column; gap: 6px;">
-            <select id="city-select" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-              <option value="Taipei">台北</option>
-              <option value="Tamsui" selected>淡水</option>
-              <option value="Kaohsiung">高雄</option>
-              <option value="Taichung">台中</option>
-              <option value="Hsinchu">新竹</option>
-              <option value="Tainan">台南</option>
-              <option value="Keelung">基隆</option>
-            </select>
-            <button type="submit" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-              查詢
-            </button>
-          </form>
-          <div id="weather-result" style="font-size: 14px; margin-top: 8px; text-align: left; line-height: 1.6;"></div>
-        </div>
-    </nav>
-    <div>
-        <header>
-            <h1>旅遊推薦系統</h1>
-            <div class="auth-links">
-                <a href="/logout">登出</a>
-            </div>
-        </header>
+    <div style="margin: 0px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
+        <h3 class="translatable" style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
+        <form id="weather-form" style="display: flex; flex-direction: column; gap: 6px;">
+          <select id="city-select" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+            <option value="Taipei" class="translatable">台北</option>
+            <option value="Tamsui" selected class="translatable">淡水</option>
+            <option value="Kaohsiung" class="translatable">高雄</option>
+            <option value="Taichung" class="translatable">台中</option>
+            <option value="Hsinchu" class="translatable">新竹</option>
+            <option value="Tainan" class="translatable">台南</option>
+            <option value="Keelung" class="translatable">基隆</option>
+          </select>
+          <button type="submit" class="translatable" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            查詢
+          </button>
+        </form>
+        <div id="weather-result" style="font-size: 14px; margin-top: 8px; text-align: left; line-height: 1.6;"></div>
     </div>
+
+    <div class="translate-box" style="margin: 20px auto; text-align: center;">
+        <select id="language-select" style="padding: 6px; border-radius: 4px;">
+          <option value="EN">English</option>
+          <option value="KO">한국인</option>
+          <option value="JA">日本語</option>
+          <option value="DE">Deutsch</option>
+          <option value="FR">Français</option>
+        </select>
+        <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
+          Translate
+        </button>
+    </div>
+  </nav>
+
+    <div>
+      <header>
+          <h1 class="translatable">個人頁面</h1>
+          <div class="auth-links">
+              <a href="/logout" >Logout</a>
+          </div>
+      </header>
+  </div>
     <main>
-      <div class="container">
-        <div class="left-section">
-          <!-- 地圖、輸入方案、排序、顯示行程 等等 -->
-          <div id="departure-point" class="card">
-            <h2>點選地圖以選擇出發點或自行輸入經緯度</h2>
-            <div id="map"></div>
-            <input type="text" id="start-longitude" placeholder="出發點經度" readonly />
-            <input type="text" id="start-latitude" placeholder="出發點緯度" readonly />
-          </div>
-    
-          <div id="itinerary-input" class="card">
-            <h2>輸入方案名稱</h2>
-            <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" />
-            <button onclick="addItinerary()">新增</button>
-            <div id="itinerary-list"></div>
-          </div>
-    
-          <div class="sort-button-container">
-            <button onclick="sortItinerary()">最佳排序</button>
-          </div>
-          <div id="sorted-itineraries" class="sorted-itineraries">
-            <div id="sorted-itinerary-list"></div>
-          </div>
-        </div>
+  <div class="container">
+    <div class="left-section">
+      <!-- 地圖、輸入方案、排序、顯示行程 -->
+      <div id="departure-point" class="card">
+        <h2 class="translatable">點選地圖以選擇出發點或自行輸入經緯度</h2>
+        <div id="map"></div>
+        <input type="text" id="start-longitude" placeholder="出發點經度" readonly class="translatable" />
+        <input type="text" id="start-latitude" placeholder="出發點緯度" readonly class="translatable" />
       </div>
-    
 
-      <section class="bus-info-section">
-        <h2>🚌 淡水公車資訊</h2>
+      <div id="itinerary-input" class="card">
+        <h2 class="translatable">輸入方案名稱</h2>
+        <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" class="translatable" />
+        <button onclick="addItinerary()" class="translatable">新增</button>
+        <div id="itinerary-list"></div>
+      </div>
 
-      
-        <div class="bus-card">
-          <h3>📍 公車即將停靠的站點</h3>
-          <input id="eta-bus-number" placeholder="輸入公車號碼，例如：紅27">
-          <button onclick="queryByBusNumber()">查詢</button>
-          <div id="bus-route-result"></div>
-        </div>
-      
-        <div class="bus-card">
-          <h3>🚏 即將進站的公車</h3>
-          <input id="eta-stop-name" placeholder="輸入站名，例如：捷運淡水站">
-          <button onclick="queryByStopName()">查詢</button>
-          <div id="bus-stop-result"></div>
-        </div>
-      
-        <div class="bus-card">
-          <h3>🔄 公車推薦（起點 ➝ 終點）</h3>
-          <input list="stops" id="start-stop" placeholder="起點站">
-          <input list="stops" id="end-stop" placeholder="終點站">
-          <datalist id="stops">
-            <option value="捷運淡水站">
-            <option value="紅毛城">
-            <option value="真理大學">
-            <option value="漁人碼頭">
-          </datalist>
-          <button onclick="fetchBusSuggestions()">查詢</button>
-          <p id="bus-error" style="color:red;"></p>
-          <div id="bus-suggestion"></div>
-        </div>
-      </section>
-    </main>
+      <div class="sort-button-container">
+        <button onclick="sortItinerary()" class="translatable">最佳排序</button>
+      </div>
+      <div id="sorted-itineraries" class="sorted-itineraries">
+        <div id="sorted-itinerary-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="bus-info-section">
+    <h2 class="translatable">🚌 淡水公車資訊</h2>
+
+    <div class="bus-card">
+      <h3 class="translatable">📍 公車即將停靠的站點</h3>
+      <input id="eta-bus-number" placeholder="輸入公車號碼，例如：紅27" class="translatable">
+      <button onclick="queryByBusNumber()" class="translatable">查詢</button>
+      <div id="bus-route-result"></div>
+    </div>
+
+    <div class="bus-card">
+      <h3 class="translatable">🚏 即將進站的公車</h3>
+      <input id="eta-stop-name" placeholder="輸入站名，例如：捷運淡水站" class="translatable">
+      <button onclick="queryByStopName()" class="translatable">查詢</button>
+      <div id="bus-stop-result"></div>
+    </div>
+
+    <div class="bus-card">
+      <h3 class="translatable">🔄 公車推薦（起點 ➝ 終點）</h3>
+      <input list="stops" id="start-stop" placeholder="起點站" class="translatable">
+      <input list="stops" id="end-stop" placeholder="終點站" class="translatable">
+      <datalist id="stops">
+        <option value="捷運淡水站">
+        <option value="紅毛城">
+        <option value="真理大學">
+        <option value="漁人碼頭">
+      </datalist>
+      <button onclick="fetchBusSuggestions()" class="translatable">查詢</button>
+      <p id="bus-error" style="color:red;"></p>
+      <div id="bus-suggestion"></div>
+    </div>
+  </section>
+</main>
     
       <script>    
         const itineraries = [];
@@ -405,6 +417,55 @@
                 });
             }
             });
+            function translatePage() {
+              const targetLang = document.getElementById("language-select").value;
+              const elements = document.querySelectorAll(".translatable");
+
+              const texts = [];
+              const map = [];
+
+              elements.forEach(el => {
+                  if (el.tagName === "INPUT" && el.placeholder) {
+                      texts.push(el.placeholder);
+                      map.push({ el, type: "placeholder" });
+                  } else if (el.children.length === 0) {
+                      texts.push(el.textContent.trim());
+                      map.push({ el, type: "text" });
+                  }
+              });
+
+              fetch("/translate", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                      text: texts.join("\n___SPLIT___\n"),
+                      target_lang: targetLang
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.error) {
+                      alert("翻譯錯誤：" + data.error);
+                  } else {
+                      const translated = data.translation.split("\n___SPLIT___\n");
+                      map.forEach((item, i) => {
+                          if (translated[i]) {
+                              if (item.type === "placeholder") {
+                                  item.el.placeholder = translated[i];
+                              } else {
+                                  item.el.textContent = translated[i];
+                              }
+                          }
+                      });
+
+                      // 確保天氣查詢表單還能用
+                      bindWeatherForm();
+                  }
+              })
+              .catch(error => console.error("翻譯錯誤:", error));
+          }
       </script>
 </body>
 </html>

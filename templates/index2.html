@@ -5,19 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}?v=1.0">
-    <title>旅遊推薦系統</title>
+    <title class="translatable">旅遊推薦系統</title>
 </head>
 
 <body>
     <nav>
-        <a href="{{ url_for('index') }}">首頁</a>
-        <a href="{{ url_for('chat_list')}}">聊天室</a>
-        <a href="{{ url_for('post') }}">刊登</a>
-        <a href="{{ url_for('cus') }}">規劃行程</a>
-        <a href="{{ url_for('user_page') }}">個人頁面</a>
+        <a href="{{ url_for('index') }}" class="translatable">首頁</a>
+        <a href="{{ url_for('chat_list')}}" class="translatable">聊天室</a>
+        <a href="{{ url_for('post') }}" class="translatable">刊登</a>
+        <a href="{{ url_for('cus') }}" class="translatable">規劃行程</a>
+        <a href="{{ url_for('user_page') }}" class="translatable">個人頁面</a>
 
-        <div style="margin: 80px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
-            <h3 style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
+        <div style="margin: 0px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
+            <h3 class="translatable" style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
             <form id="weather-form" style="display: flex; flex-direction: column; gap: 6px;">
               <select id="city-select" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
                 <option value="Taipei">台北</option>
@@ -28,20 +28,33 @@
                 <option value="Tainan">台南</option>
                 <option value="Keelung">基隆</option>
               </select>
-              <button type="submit" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              <button type="submit"  class="translatable" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
                 查詢
               </button>
             </form>
             <div id="weather-result" style="font-size: 14px; margin-top: 8px; text-align: left; line-height: 1.6;"></div>
           </div>
+
+        <div class="translate-box" style="margin: 20px auto; text-align: center;">
+            <select id="language-select" style="padding: 6px; border-radius: 4px;">
+              <option value="EN">English</option>
+              <option value="KO">한국인</option>
+              <option value="JA">日本語</option>
+              <option value="DE">Deutsch</option>
+              <option value="FR">Français</option>
+            </select>
+            <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
+                Translate
+            </button>
+        </div>
     </nav>
 
 
     <div>
         <header>
-            <h1>旅遊推薦系統</h1>
+            <h1 class="translatable">旅遊推薦系統</h1>
             <div class="auth-links">
-                <a href="/logout">登出</a>
+                <a href="/logout" class="translatable">Logout</a>
             </div>
         </header>
     </div>
@@ -49,8 +62,8 @@
     <main>
         <div class="search-bar">
             <form id="search-form">
-                <button type="submit" id="search-button">搜尋</button>
-                <input type="text" id="search-input" placeholder="搜尋行程名稱或景點...">
+                <button type="submit" id="search-button" class="translatable">搜尋</button>
+                <input type="text" id="search-input" class="translatable" placeholder="搜尋行程名稱或景點..." class="translatable">
             </form>
             <div id="search-results" class="search-results"></div>
         </div>
@@ -61,85 +74,90 @@
                 <div class="itinerary-container">
                     <div class="itinerary-image">
                         {% if itinerary.photos %}
-                            {# 假設 itinerary.photos 已為列表格式 #}
                             <img src="{{ url_for('static', filename=itinerary.photos[0]) }}" alt="景點照片">
                         {% else %}
                             <img src="{{ url_for('static', filename='pic/default.jpg') }}" alt="預設照片">
                         {% endif %}
                     </div>
                     <div class="itinerary-details">
-                        <h2>{{ itinerary.name }}</h2>
-                        <p><strong>導遊：</strong>{{ itinerary.username }}</p>
-                        <p><strong>期間：</strong>{{ itinerary.start }} ~ {{ itinerary.end }}</p>
-                        <p><strong>價格：</strong>NT${{ itinerary.price }}</p>
-                        <p><strong>簡介：</strong>{{ itinerary.desc }}</p>
-                        <p class="location"><strong>景點：</strong>{{ itinerary.locations | join(', ') }}</p>
-                        <a href="{{ url_for('case', id=itinerary.id) }}" class="view-link">查看詳細</a>
+                        <h2 class="translatable">{{ itinerary.name }}</h2>
+                        <p class="translatable"><strong>導遊：</strong>{{ itinerary.username }}</p>
+                        <p class="translatable"><strong>期間：</strong>{{ itinerary.start }} ~ {{ itinerary.end }}</p>
+                        <p class="translatable"><strong>價格：</strong>NT${{ itinerary.price }}</p>
+                        <p class="translatable"><strong>簡介：</strong>{{ itinerary.desc }}</p>
+                        <p class="location translatable"><strong>景點：</strong>{{ itinerary.locations | join(', ') }}</p>
+                        <a href="{{ url_for('case', id=itinerary.id) }}" class="view-link translatable">查看詳細</a>
                     </div>
                 </div>
             {% endfor %}
         {% else %}
-            <p>目前尚無行程。</p>
+            <p class="translatable">目前尚無行程。</p>
         {% endif %}
     </main>
 </body>
 
 <script>
+    function bindWeatherForm() {
+        const weatherForm = document.getElementById("weather-form");
+        if (weatherForm) {
+            // 先移除舊的 listener（避免重複綁定）
+            const newForm = weatherForm.cloneNode(true);
+            weatherForm.parentNode.replaceChild(newForm, weatherForm);
+
+            newForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+                const city = document.getElementById("city-select").value;
+
+                fetch("/weather", {
+                    method: "POST",
+                    body: new URLSearchParams({ city: city }),
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    let resultDiv = document.getElementById("weather-result");
+                    if (data.error) {
+                        resultDiv.innerHTML = `<p style="color: red;"> ${data.error}</p>`;
+                    } else {
+                        resultDiv.innerHTML = `
+                            🌡 ${data.temp}°C<br>
+                            ☁️ ${data.description}<br>
+                            💧 ${data.humidity}%<br>
+                            🌬 ${data.wind_speed} m/s
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error("查詢錯誤:", error);
+                    document.getElementById("weather-result").innerHTML = "❌ 無法取得資料";
+                });
+            });
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
-  const weatherForm = document.getElementById("weather-form");
-  if (weatherForm) {
-    weatherForm.addEventListener("submit", function (event) {
-      event.preventDefault();
-      const city = document.getElementById("city-select").value;
+        bindWeatherForm(); // 初始綁定
 
-      fetch("/weather", {
-        method: "POST",
-        body: new URLSearchParams({ city: city }),
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
-      })
-        .then(response => response.json())
-        .then(data => {
-          let resultDiv = document.getElementById("weather-result");
-          if (data.error) {
-            resultDiv.innerHTML = `<p style="color: red;"> ${data.error}</p>`;
-          } else {
-            resultDiv.innerHTML = `
-              🌡 ${data.temp}°C<br>
-              ☁️ ${data.description}<br>
-              💧 ${data.humidity}%<br>
-              🌬 ${data.wind_speed} m/s
-            `;
-          }
-        })
-        .catch(error => {
-          console.error("查詢錯誤:", error);
-          document.getElementById("weather-result").innerHTML = "❌ 無法取得資料";
-        });
-    });
-  }
-});
-
-
-    document.addEventListener("DOMContentLoaded", function () {
+        // 搜尋功能
         const input = document.getElementById("search-input");
         const results = document.getElementById("search-results");
-    
+
         input.addEventListener("input", function () {
             const query = input.value.trim();
             if (query.length === 0) {
                 results.innerHTML = "";
                 return;
             }
-    
+
             fetch(`/search?q=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
                     results.innerHTML = "";
                     if (data.length === 0) {
-                        results.innerHTML = "<p>沒有相關行程</p>";
+                        results.innerHTML = "<p class='translatable'>沒有相關行程</p>";
                         return;
                     }
-    
+
                     data.forEach(itinerary => {
                         const div = document.createElement("div");
                         div.classList.add("search-item");
@@ -154,6 +172,55 @@
                 });
         });
     });
-    </script>
+
+    function translatePage() {
+    const targetLang = document.getElementById("language-select").value;
+
+    const elements = document.querySelectorAll(".translatable");
+
+    const texts = [];
+    const map = [];
+
+    elements.forEach(el => {
+        // 只處理「沒有子元素的文字節點」來避免破壞結構
+        if (el.tagName === "INPUT" && el.placeholder) {
+            texts.push(el.placeholder);
+            map.push({ el, type: "placeholder" });
+        } else if (el.children.length === 0) {
+            texts.push(el.textContent.trim());
+            map.push({ el, type: "text" });
+        }
+    });
+
+    fetch("/translate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            text: texts.join("\n___SPLIT___\n"),
+            target_lang: targetLang
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert("翻譯錯誤：" + data.error);
+        } else {
+            const translated = data.translation.split("\n___SPLIT___\n");
+            map.forEach((item, i) => {
+                if (translated[i]) {
+                    if (item.type === "placeholder") {
+                        item.el.placeholder = translated[i];
+                    } else {
+                        item.el.textContent = translated[i];
+                    }
+                }
+            });
+        }
+    })
+    .catch(error => console.error("翻譯錯誤:", error));
+}
+</script>
 
 </html>

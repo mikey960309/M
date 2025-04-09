@@ -35,6 +35,9 @@ TDX_BASE_URL = "https://tdx.transportdata.tw/api/basic/v2/Bus"
 CITY_NAME = "NewTaipei"  # 淡水屬於新北市
 DISTRICT_NAME = "淡水區"
 
+DEEPL_API_KEY = 'b6b7322b-8b6b-4918-9880-0033f4202dfa:fx'  # 在這裡填入你的DeepL API金鑰
+DEEPL_URL = "https://api-free.deepl.com/v2/translate"
+
 @app.route('/index')
 def index():
     formatted_itineraries = [] 
@@ -1046,8 +1049,7 @@ def get_weather():
         "wind_speed": weather_data['wind']['speed']
     })
 
-# **取得淡水公車路線 API**
-# **查詢兩個站點之間可搭乘的公車**
+
 @app.route("/bus/search", methods=["POST"])
 def search_bus_routes():
     start_stop = request.form.get("start_stop")
@@ -1194,5 +1196,54 @@ def get_bus_suggestions():
         "direct_buses": direct_buses,
         "transfer_buses": transfer_buses
     })
+
+def translate_text_from_api(text, target_lang):
+    params = {
+        'auth_key': DEEPL_API_KEY,
+        'text': text,
+        'target_lang': target_lang
+    }
+
+    response = requests.post(DEEPL_URL, data=params)
+
+    if response.status_code != 200:
+        print("❌ DeepL API 錯誤:", response.status_code)
+        print("🔍 回傳內容:", response.text)
+        return None
+
+    try:
+        result = response.json()
+        if 'translations' in result:
+            return result['translations'][0]['text']
+        else:
+            print("❗️解析成功但找不到 'translations':", result)
+            return None
+    except Exception as e:
+        print("❌ JSON 解析錯誤:", e)
+        print("⚠️ 原始內容:", response.text)
+        return None
+
+@app.route("/translate", methods=["POST"])
+def translate_text_route():
+    data = request.get_json()
+    text = data.get("text", "")
+    target_lang = data.get("target_lang", "EN")
+
+    if not text:
+        return jsonify({"error": "未提供文本進行翻譯"}), 400
+
+    texts = text.split("\n___SPLIT___\n")  # 分段
+
+    translations = []
+    for text_chunk in texts:
+        translated_text = translate_text_from_api(text_chunk, target_lang)
+        if translated_text:
+            translations.append(translated_text)
+        else:
+            translations.append("")  # 保持對齊
+
+    final_translation = "\n___SPLIT___\n".join(translations)
+    return jsonify({"translation": final_translation})
+
 if __name__ == '__main__':
     socketio.run(app, debug=True) 
