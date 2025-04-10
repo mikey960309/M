@@ -6,18 +6,15 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from datetime import datetime
 
-
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'
+app.secret_key = 'key'
 CORS(app)
 socketio = SocketIO(app)
-
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'pic') 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER  
 if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db_config = {
     "host": "localhost",
@@ -27,15 +24,14 @@ db_config = {
 }
 
 WEATHER_API_KEY = "fb4936a1e7f8e2cd1901315a05686396"
-
 CLIENT_ID = "ae100890-ae89c86e-9a76-46e1"
 CLIENT_SECRET = "47c01c48-19ce-4d60-94e8-c72ca8eed731"
 TDX_BASE_URL = "https://tdx.transportdata.tw/api/basic/v2/Bus"
 
-CITY_NAME = "NewTaipei"  # 淡水屬於新北市
+CITY_NAME = "NewTaipei"
 DISTRICT_NAME = "淡水區"
 
-DEEPL_API_KEY = 'b6b7322b-8b6b-4918-9880-0033f4202dfa:fx'  # 在這裡填入你的DeepL API金鑰
+DEEPL_API_KEY = 'b6b7322b-8b6b-4918-9880-0033f4202dfa:fx'
 DEEPL_URL = "https://api-free.deepl.com/v2/translate"
 
 @app.route('/index')
@@ -44,7 +40,6 @@ def index():
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
-
         sql = """
             SELECT i.id, i.itinerary_name, i.start_time, i.end_time, i.description, 
                 i.price, i.locations, i.photos, i.userid, u.username, 
@@ -59,8 +54,6 @@ def index():
         for itinerary in itineraries:
 
             id, name, start, end, desc, price, locations, photos, userid, username, latitude, longitude = itinerary
-
-       
             try:
                 locations_data = json.loads(locations)
                 if isinstance(locations_data, list):
@@ -69,8 +62,6 @@ def index():
                     locations_list = [locations]
             except Exception:
                 locations_list = [loc.strip() for loc in locations.split(",")] if locations else []
-
-
             try:
                 photos_list = json.loads(photos) if photos else []
             except json.JSONDecodeError:
@@ -111,7 +102,6 @@ def search():
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor(dictionary=True) 
 
-
         sql = """
         SELECT id, itinerary_name, locations
         FROM itineraries
@@ -122,7 +112,6 @@ def search():
         """
         keyword = f"%{query}%"
         cursor.execute(sql, (keyword, keyword, keyword))
-
         raw_results = cursor.fetchall()
         results = []
 
@@ -154,7 +143,6 @@ def search():
         if connection and connection.is_connected():
             connection.close()
 
-
 @app.route('/user', methods=['GET', 'POST'])
 def user_page():
     if 'user_id' not in session:
@@ -168,7 +156,6 @@ def user_page():
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
 
-        # POST: 處理更新
         if request.method == 'POST':
             name = request.form['name']
             username = request.form['username']
@@ -187,7 +174,6 @@ def user_page():
             connection.commit()
             success_message = '資料更新成功'
 
-        # GET: 取得個人資料與留言
         user_sql = "SELECT name, username, birth_year, birth_month, birth_day, phone FROM users WHERE user_id = %s"
         cursor.execute(user_sql, (session['user_id'],))
         user_info = cursor.fetchone()
@@ -259,7 +245,6 @@ def public_user_page(username):
                            user_info=user_info,
                            user_comments=user_comments)
 
-
 @app.route('/search_usernames')
 def search_usernames():
     keyword = request.args.get('q', '').strip().lower()
@@ -321,7 +306,6 @@ def login():
 
     return render_template('login2.html')
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -367,12 +351,10 @@ def register():
         
     return render_template('register2.html')
 
-
 @app.route('/logout')
 def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
-
 
 @app.route('/post', methods=['GET', 'POST'])
 def post():
@@ -427,7 +409,6 @@ def post():
 
     return render_template('post2.html', user_info=user_info)
 
-
 @app.route('/submit_post', methods=['POST'])
 def submit_post():
     if 'user_id' not in session:
@@ -436,9 +417,7 @@ def submit_post():
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
-
         user_id = session['user_id']
-
         itinerary_name = request.form['itinerary_name']
         start_time = request.form['start_time']
         end_time = request.form['end_time']
@@ -447,7 +426,6 @@ def submit_post():
         location = request.form['location']
         latitude = float(request.form['latitude'])
         longitude = float(request.form['longitude'])
-
         photos = request.files.getlist('photos')
         photo_paths = []
 
@@ -462,26 +440,13 @@ def submit_post():
             photo_paths.append("pic/default.jpg")  
         
         sql_insert = """
-            INSERT INTO itineraries (
-                itinerary_name, start_time, end_time, locations,
-                latitude, longitude, description, price, photos, userid
-            )
+            INSERT INTO itineraries (itinerary_name, start_time, end_time, locations,latitude, longitude, description, price, photos, userid)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql_insert, (
-            itinerary_name,
-            start_time,
-            end_time,
-            location,
-            latitude,
-            longitude,
-            description,
-            price,
-            json.dumps(photo_paths),
-            user_id
+            itinerary_name,start_time,end_time,location,latitude,longitude,description,price,json.dumps(photo_paths),user_id
         ))
         connection.commit()
-
         return redirect(url_for('index'))
 
     except mysql.connector.Error as err:
@@ -494,11 +459,9 @@ def submit_post():
         if connection and connection.is_connected():
             connection.close()
 
-
 @app.route('/cus')
 def cus():
     return render_template('cus.html')
-
 
 @app.route('/cus/AddItinerary/<string:name>')
 def cus_AddItinerary(name):
@@ -542,10 +505,12 @@ def cus_AddItinerary(name):
 
     return jsonify({'error': '行程未找到'}), 404
 
-
 @app.route('/cus/ScheduleItinerary', methods=['POST'])
 def cus_ScheduleItinerary():
     data = request.get_json()
+    if not data:
+        return jsonify({'error': '請求內容不是有效的 JSON'}), 400
+
     start_latitude = data.get('start_latitude')
     start_longitude = data.get('start_longitude')
     itineraries = data.get('itineraries', [])
@@ -553,8 +518,7 @@ def cus_ScheduleItinerary():
     if start_latitude is None or start_longitude is None or not itineraries:
         return jsonify({'error': '缺少必要的資料：出發點經緯度或方案資料'}), 400
 
-
-    coords = [[float(start_longitude), float(start_latitude)]]  
+    coords = [[float(start_longitude), float(start_latitude)]]  # [lng, lat]
     id_mapping = []
 
     for it in itineraries:
@@ -562,7 +526,7 @@ def cus_ScheduleItinerary():
         lng = it.get("longitude")
         if lat is None or lng is None:
             continue
-        coords.append([float(lat), float(lng)]) 
+        coords.append([float(lng), float(lat)]) 
         id_mapping.append(it.get("id"))
 
     if len(coords) <= 1:
@@ -570,10 +534,9 @@ def cus_ScheduleItinerary():
 
     url = "https://api.openrouteservice.org/optimization"
     headers = {
-        "Authorization": "5b3ce3597851110001cf6248f69e027fbc2f42cb8c3f1bfc9251097b",
+        "Authorization": "5b3ce3597851110001cf62489e3b774658314350b6f0aa5afac5b7e78ffda53643fbf995c46ecd9a",
         "Content-Type": "application/json"
     }
-
     body = {
         "jobs": [
             {"id": idx + 1, "location": coord}
@@ -582,25 +545,25 @@ def cus_ScheduleItinerary():
         "vehicles": [{
             "id": 0,
             "profile": "driving-car",
-            "start": coords[0], 
+            "start": coords[0],
             "end": coords[0]
         }]
     }
-
-    print("Request body:", json.dumps(body, indent=2))  
-
+    print("Request body:", json.dumps(body, indent=2))
     response = requests.post(url, json=body, headers=headers)
 
     if response.status_code == 200:
         result = response.json()
         steps = result["routes"][0]["steps"]
-        sorted_itinerary_ids = [id_mapping[step["job"] - 1] for step in steps if step.get("job")]
+        sorted_itinerary_ids = []
+        for step in steps:
+            job = step.get("job")
+            if job and 1 <= job <= len(id_mapping):
+                sorted_itinerary_ids.append(id_mapping[job - 1])
         return jsonify({'sorted_itinerary_ids': sorted_itinerary_ids})
     else:
-        print("API Error:", response.text)
-        return jsonify({'error': 'OpenRouteService API呼叫失敗'}), 500
-    return render_template('cus.html')
-
+        print("API Error:", response.status_code, response.text)
+        return jsonify({'error': 'OpenRouteService API呼叫失敗', 'details': response.text}), 500
 
 @app.route('/case/<int:id>')
 def case(id):
@@ -656,7 +619,6 @@ def case(id):
         if connection and connection.is_connected():
             connection.close()
 
-
 @app.route('/edit_case/<int:id>', methods=['GET', 'POST'])
 def edit_case(id):
     if 'user_id' not in session:
@@ -665,8 +627,6 @@ def edit_case(id):
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
-
-        # 查詢行程擁有者
         cursor.execute("SELECT userid FROM itineraries WHERE id = %s", (id,))
         result = cursor.fetchone()
 
@@ -697,7 +657,6 @@ def edit_case(id):
                 if not (-90 <= latitude <= 90):
                     return render_template('error.html', error_message='緯度必須在 -90 到 90 之間'), 400
 
-                # 處理照片
                 keep_photos = request.form.getlist('keep_photos')
                 new_photos = request.files.getlist('new_photos')
                 new_photo_paths = []
@@ -776,16 +735,13 @@ def edit_case(id):
         if connection and connection.is_connected():
             connection.close()
 
-#提供聊天介面，根據用戶名加載聊天記錄。同時也可處理發送訊息的請求。
 @app.route('/chat/<username>', methods=['GET', 'POST'])
 def chat(username):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
     user_messages = []
     contacts = []
     user_id = session['user_id'] 
-
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
@@ -830,10 +786,8 @@ def chat(username):
                     'recipient_id': recipient_id,
                     'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
                 }, room=str(recipient_id)) 
-
         else:
             return render_template('error.html', error_message=f"使用者 '{username}' 不存在")
-
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤')
@@ -842,7 +796,6 @@ def chat(username):
             cursor.close()
         if connection and connection.is_connected():
             connection.close()
-
     return render_template('chat2.html', chat_messages=user_messages, recipient_id=recipient_id, contacts=contacts)
 
 @app.route('/chat_list')
@@ -861,7 +814,6 @@ def chat_list():
         if connection and connection.is_connected():
             connection.close()
     return render_template('chat_list.html', users=users)
-
 
 @socketio.on('send_message')
 def handle_send_message(data):
@@ -899,7 +851,6 @@ def handle_send_message(data):
                 cursor.close()
             if connection.is_connected():
                 connection.close()
-
 
 @app.route('/add_comment/<int:itinerary_id>', methods=['POST'])
 def add_comment(itinerary_id):
@@ -963,7 +914,6 @@ def get_comments(itinerary_id):
         if connection:
             connection.close()
 
-
 @app.route('/add_user_comment/<username>', methods=['POST'])
 def add_user_comment(username):
     if 'user_id' not in session:
@@ -988,7 +938,6 @@ def add_user_comment(username):
             cursor.close()
         if connection and connection.is_connected():
             connection.close()
-
 
 @app.route('/get_user_comments/<username>', methods=['GET'])
 def get_user_comments(username):
@@ -1048,7 +997,6 @@ def get_weather():
         "humidity": weather_data['main']['humidity'],
         "wind_speed": weather_data['wind']['speed']
     })
-
 
 @app.route("/bus/search", methods=["POST"])
 def search_bus_routes():
@@ -1148,7 +1096,6 @@ def get_eta_by_stop():
 def get_bus_suggestions():
     start_stop = request.args.get("start", "").strip()
     end_stop = request.args.get("end", "").strip()
-
     if not start_stop or not end_stop:
         return jsonify({"error": "請輸入起點與終點站"}), 400
 
@@ -1164,7 +1111,6 @@ def get_bus_suggestions():
         return jsonify({"error": "無法取得公車路線資訊"}), 500
 
     bus_data = response.json()
-
     buses_via_start = set()
     buses_via_end = set()
     direct_buses = []
@@ -1181,7 +1127,6 @@ def get_bus_suggestions():
         if end_stop in stops:
             buses_via_end.add(route_name)
 
-    # 限制最多轉乘結果數量
     MAX_RESULTS = 10
     for bus1 in buses_via_start:
         for bus2 in buses_via_end:

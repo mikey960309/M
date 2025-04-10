@@ -1,390 +1,296 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-    </script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/cus.css') }}?v=1.0">
-    <title class="translatable">旅遊推薦系統</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cus.css') }}?v=1.0">
+  <title class="translatable">旅遊推薦系統</title>
 </head>
 <body>
   <nav>
     <a href="{{ url_for('index') }}" class="translatable">首頁</a>
-    <a href="{{ url_for('chat_list')}}" class="translatable">聊天室</a>
+    <a href="{{ url_for('chat_list') }}" class="translatable">聊天室</a>
     <a href="{{ url_for('post') }}" class="translatable">刊登</a>
     <a href="{{ url_for('cus') }}" class="translatable">規劃行程</a>
     <a href="{{ url_for('user_page') }}" class="translatable">個人頁面</a>
 
-    <div style="margin: 0px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
-        <h3 class="translatable" style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
-        <form id="weather-form" style="display: flex; flex-direction: column; gap: 6px;">
-          <select id="city-select" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-            <option value="Taipei" class="translatable">台北</option>
-            <option value="Tamsui" selected class="translatable">淡水</option>
-            <option value="Kaohsiung" class="translatable">高雄</option>
-            <option value="Taichung" class="translatable">台中</option>
-            <option value="Hsinchu" class="translatable">新竹</option>
-            <option value="Tainan" class="translatable">台南</option>
-            <option value="Keelung" class="translatable">基隆</option>
-          </select>
-          <button type="submit" class="translatable" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            查詢
-          </button>
-        </form>
-        <div id="weather-result" style="font-size: 14px; margin-top: 8px; text-align: left; line-height: 1.6;"></div>
+    <div class="weather-box">
+      <h3 class="translatable">🌤 天氣查詢</h3>
+      <form id="weather-form">
+        <select id="city-select">
+          <option value="Taipei">台北</option>
+          <option value="Tamsui" selected>淡水</option>
+          <option value="Kaohsiung">高雄</option>
+          <option value="Taichung">台中</option>
+          <option value="Hsinchu">新竹</option>
+          <option value="Tainan">台南</option>
+          <option value="Keelung">基隆</option>
+        </select>
+        <button type="submit" class="translatable">查詢</button>
+      </form>
+      <div id="weather-result"></div>
     </div>
 
-    <div class="translate-box" style="margin: 20px auto; text-align: center;">
-        <select id="language-select" style="padding: 6px; border-radius: 4px;">
-          <option value="EN">English</option>
-          <option value="KO">한국인</option>
-          <option value="JA">日本語</option>
-          <option value="DE">Deutsch</option>
-          <option value="FR">Français</option>
-        </select>
-        <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
-          Translate
-        </button>
+    <div class="translate-box">
+      <select id="language-select">
+        <option value="EN">English</option>
+        <option value="KO">한국인</option>
+        <option value="JA">日本語</option>
+        <option value="DE">Deutsch</option>
+        <option value="FR">Français</option>
+      </select>
+      <button onclick="translatePage()" class="translatable">Translate</button>
     </div>
   </nav>
 
-    <div>
-      <header>
-          <h1 class="translatable">個人頁面</h1>
-          <div class="auth-links">
-              <a href="/logout" >Logout</a>
-          </div>
-      </header>
-  </div>
-    <main>
-  <div class="container">
-    <div class="left-section">
-      <!-- 地圖、輸入方案、排序、顯示行程 -->
-      <div id="departure-point" class="card">
-        <h2 class="translatable">點選地圖以選擇出發點或自行輸入經緯度</h2>
-        <div id="map"></div>
-        <input type="text" id="start-longitude" placeholder="出發點經度" readonly class="translatable" />
-        <input type="text" id="start-latitude" placeholder="出發點緯度" readonly class="translatable" />
+  <header>
+    <h1 class="translatable">旅遊推薦系統</h1>
+    <div class="auth-links">
+      <a href="/logout">登出</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="cus-layout">
+      <!-- 左側功能區 -->
+      <div class="cus-left">
+        <div class="card">
+          <h2 class="translatable">點選地圖以選擇出發點或自行輸入經緯度</h2>
+          <div id="map"></div>
+          <input type="text" id="start-longitude" placeholder="出發點經度" readonly class="translatable" />
+          <input type="text" id="start-latitude" placeholder="出發點緯度" readonly class="translatable" />
+        </div>
+
+        <div class="card">
+          <h2 class="translatable">輸入方案名稱</h2>
+          <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" class="translatable" />
+          <button onclick="addItinerary()" class="translatable">新增</button>
+          <div id="itinerary-list"></div>
+        </div>
+
+        <div class="sort-button-container">
+          <button onclick="sortItinerary()" class="translatable">最佳排序</button>
+        </div>
+
+        <div class="sorted-itineraries">
+          <div id="sorted-itinerary-list"></div>
+        </div>
+
+        <!-- 推薦飯店放在這裡 -->
+        <div class="hotel-section">
+          <h2>推薦飯店：</h2>
+          <div id="hotel-recommendations-display" class="hotel-recommendations"></div>
+        </div>
       </div>
 
-      <div id="itinerary-input" class="card">
-        <h2 class="translatable">輸入方案名稱</h2>
-        <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" class="translatable" />
-        <button onclick="addItinerary()" class="translatable">新增</button>
-        <div id="itinerary-list"></div>
+      <!-- 右側：公車資訊 -->
+      <div class="cus-right">
+        <h2 class="translatable">🚌 公車資訊</h2>
+        <button onclick="fetchBusRoutes()">取得淡水公車路線</button>
+        <ul id="bus-list"></ul>
+
+        <div class="bus-card">
+          <h3 class="translatable">📍 公車即將停靠的站點</h3>
+          <input id="eta-bus-number" placeholder="輸入公車號碼，例如：紅27" class="translatable">
+          <button onclick="queryByBusNumber()" class="translatable">查詢</button>
+          <div id="bus-route-result"></div>
+        </div>
+
+        <div class="bus-card">
+          <h3 class="translatable">🚏 即將進站的公車</h3>
+          <input id="eta-stop-name" placeholder="輸入站名，例如：捷運淡水站" class="translatable">
+          <button onclick="queryByStopName()" class="translatable">查詢</button>
+          <div id="bus-stop-result"></div>
+        </div>
+
+        <div class="bus-card">
+          <h3 class="translatable">🔄 公車推薦（起點 ➝ 終點）</h3>
+          <input list="stops" id="start-stop" placeholder="起點站" class="translatable">
+          <input list="stops" id="end-stop" placeholder="終點站" class="translatable">
+          <datalist id="stops">
+            <option value="捷運淡水站">
+            <option value="紅毛城">
+            <option value="真理大學">
+            <option value="漁人碼頭">
+          </datalist>
+          <button onclick="fetchBusSuggestions()" class="translatable">查詢</button>
+          <p id="bus-error" style="color:red;"></p>
+          <div id="bus-suggestion"></div>
+        </div>
       </div>
-
-      <div class="sort-button-container">
-        <button onclick="sortItinerary()" class="translatable">最佳排序</button>
-      </div>
-      <div id="sorted-itineraries" class="sorted-itineraries">
-        <div id="sorted-itinerary-list"></div>
-      </div>
     </div>
-  </div>
+  </main>
 
-  <section class="bus-info-section">
-    <h2 class="translatable">🚌 淡水公車資訊</h2>
+  <script>
+    const map = L.map('map').setView([25.033964, 121.564472], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap 貢獻者'
+    }).addTo(map);
 
-    <div class="bus-card">
-      <h3 class="translatable">📍 公車即將停靠的站點</h3>
-      <input id="eta-bus-number" placeholder="輸入公車號碼，例如：紅27" class="translatable">
-      <button onclick="queryByBusNumber()" class="translatable">查詢</button>
-      <div id="bus-route-result"></div>
-    </div>
+    let marker;
+    map.on('click', function (e) {
+      const lat = e.latlng.lat.toFixed(6);
+      const lng = e.latlng.lng.toFixed(6);
+      document.getElementById('start-latitude').value = lat;
+      document.getElementById('start-longitude').value = lng;
 
-    <div class="bus-card">
-      <h3 class="translatable">🚏 即將進站的公車</h3>
-      <input id="eta-stop-name" placeholder="輸入站名，例如：捷運淡水站" class="translatable">
-      <button onclick="queryByStopName()" class="translatable">查詢</button>
-      <div id="bus-stop-result"></div>
-    </div>
+      if (marker) {
+        marker.setLatLng(e.latlng);
+      } else {
+        marker = L.marker(e.latlng).addTo(map);
+      }
+    });
 
-    <div class="bus-card">
-      <h3 class="translatable">🔄 公車推薦（起點 ➝ 終點）</h3>
-      <input list="stops" id="start-stop" placeholder="起點站" class="translatable">
-      <input list="stops" id="end-stop" placeholder="終點站" class="translatable">
-      <datalist id="stops">
-        <option value="捷運淡水站">
-        <option value="紅毛城">
-        <option value="真理大學">
-        <option value="漁人碼頭">
-      </datalist>
-      <button onclick="fetchBusSuggestions()" class="translatable">查詢</button>
-      <p id="bus-error" style="color:red;"></p>
-      <div id="bus-suggestion"></div>
-    </div>
-  </section>
-</main>
-    
-      <script>    
-        const itineraries = [];
-    
-        async function addItinerary() {
-          const itineraryName = document.getElementById('itinerary-Name').value;
-          const response = await fetch(`/cus/AddItinerary/${itineraryName}`);
-    
-          if (!response.ok) {
-            alert("方案ID不存在或發生錯誤");
-            return;
-          }
-    
-          const itineraryData = await response.json();
-          displayItinerary(itineraryData);
-          itineraries.push(itineraryData);
-          displaySortedItineraries();
-        }
-    
-        function displayItinerary(itineraryData) {
-          if (itineraryData.error) {
-            alert(itineraryData.error);
-            return;
-          }
-    
-          const itineraryList = document.getElementById('itinerary-list');
-          const itineraryItem = document.createElement('div');
-          itineraryItem.classList.add('itinerary-item');
-          itineraryItem.innerHTML = `
-            <h3>${itineraryData.name}</h3>
-            <p>時間: ${itineraryData.start} ~ ${itineraryData.end}</p>
-            <p>介紹: ${itineraryData.desc}</p>
-            <p>價格: ${itineraryData.price}</p>
-            <p>地點: ${itineraryData.locations.join(', ')}</p>
-          `;
-          itineraryItem.dataset.id = itineraryData.id;
-          itineraryItem.dataset.latitude = itineraryData.latitude;
-          itineraryItem.dataset.longitude = itineraryData.longitude;
-          itineraryList.appendChild(itineraryItem);
-        }
-    
-        function displaySortedItineraries() {
-          const list = document.getElementById('sorted-itinerary-list');
-          list.innerHTML = '';
-          itineraries.forEach(itinerary => {
-            const item = document.createElement('div');
-            item.classList.add('itinerary-item');
-            item.innerHTML = `<h4>${itinerary.name}</h4>`;
-            list.appendChild(item);
+    const itineraries = [];
+
+    async function addItinerary() {
+      const itineraryName = document.getElementById('itinerary-Name').value;
+      const response = await fetch(`/cus/AddItinerary/${itineraryName}`);
+
+      if (!response.ok) {
+        alert("方案ID不存在或發生錯誤");
+        return;
+      }
+
+      const itineraryData = await response.json();
+      displayItinerary(itineraryData);
+      itineraries.push(itineraryData);
+      displaySortedItineraries();
+    }
+
+    function displayItinerary(itineraryData) {
+      if (itineraryData.error) {
+        alert(itineraryData.error);
+        return;
+      }
+
+      const itineraryList = document.getElementById('itinerary-list');
+      const itineraryItem = document.createElement('div');
+      itineraryItem.classList.add('itinerary-item');
+      itineraryItem.innerHTML = `
+        <h3>${itineraryData.name}</h3>
+        <p>時間: ${itineraryData.start} ~ ${itineraryData.end}</p>
+        <p>介紹: ${itineraryData.desc}</p>
+        <p>價格: ${itineraryData.price}</p>
+        <p>地點: ${itineraryData.locations.join(', ')}</p>
+      `;
+      itineraryItem.dataset.id = itineraryData.id;
+      itineraryItem.dataset.latitude = itineraryData.latitude;
+      itineraryItem.dataset.longitude = itineraryData.longitude;
+      itineraryList.appendChild(itineraryItem);
+    }
+
+    function displaySortedItineraries() {
+      const list = document.getElementById('sorted-itinerary-list');
+      list.innerHTML = '';
+      itineraries.forEach(itinerary => {
+        const item = document.createElement('div');
+        item.classList.add('itinerary-item');
+        item.innerHTML = `<h4>${itinerary.name}</h4>`;
+        list.appendChild(item);
+      });
+    }
+
+    function sortItinerary() {
+      const startLatitude = document.getElementById("start-latitude").value;
+      const startLongitude = document.getElementById("start-longitude").value;
+
+      if (!startLatitude || !startLongitude) {
+        alert("請點選地圖選擇出發點！");
+        return;
+      }
+
+      const itineraryItems = document.querySelectorAll("#itinerary-list .itinerary-item");
+      let itinerariesData = [];
+      const idToNameMap = {};
+
+      itineraryItems.forEach(item => {
+        const id = item.dataset.id;
+        const latitude = item.dataset.latitude;
+        const longitude = item.dataset.longitude;
+        const name = item.querySelector('h3').innerText;
+
+        if (id && latitude && longitude) {
+          itinerariesData.push({
+            id: parseInt(id),
+            latitude: parseFloat(latitude),
+            longitude: parseFloat(longitude)
           });
+          idToNameMap[parseInt(id)] = name;
         }
-    
-        function sortItinerary() {
-          const startLatitude = document.getElementById("start-latitude").value;
-          const startLongitude = document.getElementById("start-longitude").value;
-          if (!startLatitude || !startLongitude) {
-            alert("請點選地圖選擇出發點！");
-            return;
-          }
-    
-          const itineraryItems = document.querySelectorAll("#itinerary-list .itinerary-item");
-          let itinerariesData = [];
-          const idToNameMap = {};
-    
-          itineraryItems.forEach(item => {
-            const id = item.dataset.id;
-            const latitude = item.dataset.latitude;
-            const longitude = item.dataset.longitude;
-            const name = item.querySelector('h3').innerText;
-    
-            if (id && latitude && longitude) {
-              itinerariesData.push({
-                id: parseInt(id),
-                latitude: parseFloat(latitude),
-                longitude: parseFloat(longitude)
-              });
-              idToNameMap[parseInt(id)] = name;
-            }
-          });
-    
-          fetch('/cus/ScheduleItinerary', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              start_latitude: startLatitude,
-              start_longitude: startLongitude,
-              itineraries: itinerariesData
-            })
-          })
-            .then(response => response.json())
-            .then(data => {
-              if (data.error) {
-                alert(data.error);
-              } else {
-                const sortedItineraryList = document.getElementById('sorted-itinerary-list');
-                sortedItineraryList.innerHTML = '最佳排序：';
-                data.sorted_itinerary_ids.forEach(id => {
-                  const name = idToNameMap[id] || `ID:${id}`;
-                  const nameElem = document.createElement('div');
-                  nameElem.textContent = name;
-                  sortedItineraryList.appendChild(nameElem);
-                });
-              }
-            })
-            .catch(error => console.error('Error:', error));
-        }
-    
-        // Leaflet 地圖初始化
-        const map = L.map('map').setView([25.033964, 121.564472], 8);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap 貢獻者'
-        }).addTo(map);
-    
-        let marker;
-        map.on('click', function (e) {
-          const lat = e.latlng.lat.toFixed(6);
-          const lng = e.latlng.lng.toFixed(6);
-          document.getElementById('start-latitude').value = lat;
-          document.getElementById('start-longitude').value = lng;
-    
-          if (marker) {
-            marker.setLatLng(e.latlng);
+      });
+
+      fetch('/cus/ScheduleItinerary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start_latitude: startLatitude,
+          start_longitude: startLongitude,
+          itineraries: itinerariesData
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            alert(data.error);
           } else {
-            marker = L.marker(e.latlng).addTo(map);
-          }
+            const sortedItineraryList = document.getElementById('sorted-itinerary-list');
+            sortedItineraryList.innerHTML = '最佳排序：';
+            data.sorted_itinerary_ids.forEach(id => {
+              const name = idToNameMap[id] || `ID:${id}`;
+              const nameElem = document.createElement('div');
+              nameElem.textContent = name;
+              sortedItineraryList.appendChild(nameElem);
         });
 
-        function fetchBusRoutes() {
-          fetch("/bus/routes")
-            .then(response => response.json())
-            .then(data => {
-              let list = document.getElementById("bus-list");
-              list.innerHTML = "";
-              data.forEach(bus => {
-                let li = document.createElement("li");
-                li.textContent = bus.RouteName;
-                list.appendChild(li);
-              });
-            })
-            .catch(error => console.error("錯誤:", error));
-        }
+        const last = itinerariesData.find(it => it.id === data.sorted_itinerary_ids[data.sorted_itinerary_ids.length - 1]);
+        const overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["tourism"="hotel"](around:8000,${last.latitude},${last.longitude});
+            way["tourism"="hotel"](around:8000,${last.latitude},${last.longitude});
+            relation["tourism"="hotel"](around:8000,${last.latitude},${last.longitude});
+          );
+          out center;
+        `;
+        const overpassUrl = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(overpassQuery);
 
-        function queryByBusNumber() {
-          const route = document.getElementById("eta-bus-number").value.trim();
-          const div = document.getElementById("bus-route-result");
-          div.innerHTML = "";
+        fetch(overpassUrl)
+          .then(res => res.json())
+          .then(json => {
+            const hotels = json.elements
+              .filter(h => h.tags && h.tags.name)
+              .slice(0, 5);
 
-          if (!route) return div.innerHTML = "<p style='color:red;'>❗ 請輸入公車號碼</p>";
+            const hotelDisplay = document.getElementById('hotel-recommendations-display');
+            hotelDisplay.innerHTML = '';
 
-          fetch(`/bus/eta/by-route?bus_number=${encodeURIComponent(route)}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.error) {
-                div.innerHTML = `<p style="color:red;">❌ ${data.error}</p>`;
-                return;
-              }
-              if (data.etas.length === 0) {
-                div.innerHTML = `<p>❗ 沒有即將到站的資訊</p>`;
-                return;
-              }
+            if (hotels.length === 0) {
+              hotelDisplay.innerHTML = "<p style='color:gray;'>⚠️ 此地附近沒有找到飯店</p>";
+              return;
+            }
 
-              let html = `<h4>${data.route} 即將停靠的站點：</h4><ul>`;
-              data.etas.forEach(item => {
-                html += `<li>${item.StopName}：${item.EstimateTime} 分鐘</li>`;
-              });
-              html += "</ul>";
-              div.innerHTML = html;
-            })
-            .catch(error => {
-              div.innerHTML = "<p style='color:red;'>❌ 查詢失敗</p>";
-              console.error("🚨 錯誤:", error);
+            hotels.forEach(h => {
+              const stars = h.tags.stars ? `（${h.tags.stars}星）` : '';
+              hotelDisplay.innerHTML += `
+                <div class="hotel-item">🏨 ${h.tags.name} ${stars}</div>
+              `;
             });
-        }
+          })
+          .catch(err => {
+            console.error("Overpass 查詢錯誤：", err);
+            document.getElementById('hotel-recommendations-display').innerHTML =
+              "<p style='color:red;'>⚠️ 飯店推薦查詢失敗</p>";
+          });
+                  }
+                })
+                .catch(error => console.error('Error:', error));
+            }
 
-        function queryByStopName() {
-          const stop = document.getElementById("eta-stop-name").value.trim();
-          const div = document.getElementById("bus-stop-result");
-          div.innerHTML = "";
-
-          if (!stop) return div.innerHTML = "<p style='color:red;'>❗ 請輸入站名</p>";
-
-          fetch(`/bus/eta/by-stop?stop_name=${encodeURIComponent(stop)}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.error) {
-                div.innerHTML = `<p style="color:red;">❌ ${data.error}</p>`;
-                return;
-              }
-
-              if (data.etas.length === 0) {
-                div.innerHTML = `<p>❗ 目前沒有即將進站的公車</p>`;
-                return;
-              }
-
-              let html = `<h4>${data.stop} 即將進站的公車：</h4><ul>`;
-              data.etas.forEach(item => {
-                html += `<li>${item.RouteName}：${item.EstimateTime} 分鐘</li>`;
-              });
-              html += "</ul>";
-              div.innerHTML = html;
-            })
-            .catch(error => {
-              div.innerHTML = "<p style='color:red;'>❌ 查詢失敗</p>";
-              console.error("🚨 錯誤:", error);
-            });
-        }
-
-        function fetchBusSuggestions() {
-          let start = document.getElementById("start-stop").value.trim();
-          let end = document.getElementById("end-stop").value.trim();
-          const errorMsg = document.getElementById("bus-error");
-
-          if (!start || !end) {
-            errorMsg.textContent = "❗ 請輸入起點與終點站！";
-            return;
-          } else {
-            errorMsg.textContent = "";
-          }
-
-          fetch(`/bus/suggestions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
-            .then(response => {
-              if (!response.ok) throw new Error("狀態碼：" + response.status);
-              return response.json();
-            })
-            .then(data => {
-              let resultDiv = document.getElementById("bus-suggestion");
-              resultDiv.innerHTML = "";
-
-              if (data.error) {
-                resultDiv.innerHTML = `<p>❌ ${data.error}</p>`;
-                return;
-              }
-
-              let html = "<h3>🚍 公車建議</h3>";
-
-              if (data.direct_buses.length > 0) {
-                html += "<h4>✅ 直達公車：</h4><ul>";
-                data.direct_buses.forEach(bus => {
-                  html += `<li>${bus}</li>`;
-                });
-                html += "</ul>";
-              } else {
-                html += "<p>❌ 沒有直達公車</p>";
-              }
-
-              if (data.transfer_buses.length > 0) {
-                html += "<h4>🔄 可轉乘：</h4><ul>";
-                data.transfer_buses.forEach(([bus1, bus2]) => {
-                  html += `<li>${bus1} ➝ ${bus2}</li>`;
-                });
-                html += "</ul>";
-              } else {
-                html += "<p>❌ 沒有可轉乘的公車</p>";
-              }
-
-              resultDiv.innerHTML = html;
-            })
-            .catch(error => {
-              console.error("🚨 API 請求失敗：", error);
-              document.getElementById("bus-suggestion").innerHTML = "<p>❌ 無法取得公車建議</p>";
-            });
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
             const weatherForm = document.getElementById("weather-form");
             if (weatherForm) {
                 weatherForm.addEventListener("submit", function (event) {
@@ -416,56 +322,191 @@
                     });
                 });
             }
-            });
-            function translatePage() {
-              const targetLang = document.getElementById("language-select").value;
-              const elements = document.querySelectorAll(".translatable");
+          });
 
-              const texts = [];
-              const map = [];
+      function translatePage() {
+        const targetLang = document.getElementById("language-select").value;
+        const elements = document.querySelectorAll(".translatable");
 
-              elements.forEach(el => {
-                  if (el.tagName === "INPUT" && el.placeholder) {
-                      texts.push(el.placeholder);
-                      map.push({ el, type: "placeholder" });
-                  } else if (el.children.length === 0) {
-                      texts.push(el.textContent.trim());
-                      map.push({ el, type: "text" });
-                  }
-              });
+        const texts = [];
+        const map = [];
 
-              fetch("/translate", {
-                  method: "POST",
-                  headers: {
-                      "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify({
-                      text: texts.join("\n___SPLIT___\n"),
-                      target_lang: targetLang
-                  })
-              })
-              .then(response => response.json())
-              .then(data => {
-                  if (data.error) {
-                      alert("翻譯錯誤：" + data.error);
-                  } else {
-                      const translated = data.translation.split("\n___SPLIT___\n");
-                      map.forEach((item, i) => {
-                          if (translated[i]) {
-                              if (item.type === "placeholder") {
-                                  item.el.placeholder = translated[i];
-                              } else {
-                                  item.el.textContent = translated[i];
-                              }
-                          }
-                      });
+        elements.forEach(el => {
+            if (el.tagName === "INPUT" && el.placeholder) {
+                texts.push(el.placeholder);
+                map.push({ el, type: "placeholder" });
+            } else if (el.children.length === 0) {
+                texts.push(el.textContent.trim());
+                map.push({ el, type: "text" });
+            }
+        });
 
-                      // 確保天氣查詢表單還能用
-                      bindWeatherForm();
-                  }
-              })
-              .catch(error => console.error("翻譯錯誤:", error));
-          }
-      </script>
+        fetch("/translate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                text: texts.join("\n___SPLIT___\n"),
+                target_lang: targetLang
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert("翻譯錯誤：" + data.error);
+            } else {
+                const translated = data.translation.split("\n___SPLIT___\n");
+                map.forEach((item, i) => {
+                    if (translated[i]) {
+                        if (item.type === "placeholder") {
+                            item.el.placeholder = translated[i];
+                        } else {
+                            item.el.textContent = translated[i];
+                        }
+                    }
+                });
+
+                bindWeatherForm();
+            }
+        })
+        .catch(error => console.error("翻譯錯誤:", error));
+    }
+  function fetchBusRoutes() {
+    fetch("/bus/routes")
+      .then(response => response.json())
+      .then(data => {
+        let list = document.getElementById("bus-list");
+        list.innerHTML = "";
+        data.forEach(bus => {
+          let li = document.createElement("li");
+          li.textContent = bus.RouteName;
+          list.appendChild(li);
+        });
+      })
+      .catch(error => console.error("錯誤:", error));
+  }
+
+  function queryByBusNumber() {
+    const route = document.getElementById("eta-bus-number").value.trim();
+    const div = document.getElementById("bus-route-result");
+    div.innerHTML = "";
+
+    if (!route) return div.innerHTML = "<p style='color:red;'>❗ 請輸入公車號碼</p>";
+
+    fetch(`/bus/eta/by-route?bus_number=${encodeURIComponent(route)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          div.innerHTML = `<p style="color:red;">❌ ${data.error}</p>`;
+          return;
+        }
+        if (data.etas.length === 0) {
+          div.innerHTML = `<p>❗ 沒有即將到站的資訊</p>`;
+          return;
+        }
+
+        let html = `<h4>${data.route} 即將停靠的站點：</h4><ul>`;
+        data.etas.forEach(item => {
+          html += `<li>${item.StopName}：${item.EstimateTime} 分鐘</li>`;
+        });
+        html += "</ul>";
+        div.innerHTML = html;
+      })
+      .catch(error => {
+        div.innerHTML = "<p style='color:red;'>❌ 查詢失敗</p>";
+        console.error("🚨 錯誤:", error);
+      });
+  }
+
+  function queryByStopName() {
+    const stop = document.getElementById("eta-stop-name").value.trim();
+    const div = document.getElementById("bus-stop-result");
+    div.innerHTML = "";
+
+    if (!stop) return div.innerHTML = "<p style='color:red;'>❗ 請輸入站名</p>";
+
+    fetch(`/bus/eta/by-stop?stop_name=${encodeURIComponent(stop)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          div.innerHTML = `<p style="color:red;">❌ ${data.error}</p>`;
+          return;
+        }
+
+        if (data.etas.length === 0) {
+          div.innerHTML = `<p>❗ 目前沒有即將進站的公車</p>`;
+          return;
+        }
+
+        let html = `<h4>${data.stop} 即將進站的公車：</h4><ul>`;
+        data.etas.forEach(item => {
+          html += `<li>${item.RouteName}：${item.EstimateTime} 分鐘</li>`;
+        });
+        html += "</ul>";
+        div.innerHTML = html;
+      })
+      .catch(error => {
+        div.innerHTML = "<p style='color:red;'>❌ 查詢失敗</p>";
+        console.error("🚨 錯誤:", error);
+      });
+  }
+
+  function fetchBusSuggestions() {
+    let start = document.getElementById("start-stop").value.trim();
+    let end = document.getElementById("end-stop").value.trim();
+    const errorMsg = document.getElementById("bus-error");
+
+    if (!start || !end) {
+      errorMsg.textContent = "❗ 請輸入起點與終點站！";
+      return;
+    } else {
+      errorMsg.textContent = "";
+    }
+
+    fetch(`/bus/suggestions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
+      .then(response => {
+        if (!response.ok) throw new Error("狀態碼：" + response.status);
+        return response.json();
+      })
+      .then(data => {
+        let resultDiv = document.getElementById("bus-suggestion");
+        resultDiv.innerHTML = "";
+
+        if (data.error) {
+          resultDiv.innerHTML = `<p>❌ ${data.error}</p>`;
+          return;
+        }
+
+        let html = "<h3>🚍 公車建議</h3>";
+
+        if (data.direct_buses.length > 0) {
+          html += "<h4>✅ 直達公車：</h4><ul>";
+          data.direct_buses.forEach(bus => {
+            html += `<li>${bus}</li>`;
+          });
+          html += "</ul>";
+        } else {
+          html += "<p>❌ 沒有直達公車</p>";
+        }
+
+        if (data.transfer_buses.length > 0) {
+          html += "<h4>🔄 可轉乘：</h4><ul>";
+          data.transfer_buses.forEach(([bus1, bus2]) => {
+            html += `<li>${bus1} ➝ ${bus2}</li>`;
+          });
+          html += "</ul>";
+        } else {
+          html += "<p>❌ 沒有可轉乘的公車</p>";
+        }
+
+        resultDiv.innerHTML = html;
+      })
+      .catch(error => {
+        console.error("🚨 API 請求失敗：", error);
+        document.getElementById("bus-suggestion").innerHTML = "<p>❌ 無法取得公車建議</p>";
+      });
+  }
+  </script>
 </body>
 </html>

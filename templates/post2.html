@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <title class="translatable">刊登 - 旅遊推薦系統</title>
+    <title>刊登 - 旅遊推薦系統</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/post.css') }}?v=1.0">
 </head>
 <body>
     <div>
         <header>
-            <h1 class="translatable">個人頁面</h1>
+            <h1 class="translatable">刊登頁面</h1>
             <div class="auth-links">
                 <a href="/logout" >Logout</a>
             </div>
@@ -52,50 +52,38 @@
               <option value="FR">Français</option>
             </select>
             <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
-                Translate
+              翻譯網頁
             </button>
         </div>
     </nav>
     <main>
         <div class="form-container">
-            <!-- 左欄：基本資料 -->
-            <div class="form-left">
-                <h2 class="translatable">刊登行程</h2>
-    
+            <h2 class="translatable">刊登行程</h2>
+            <form action="{{ url_for('submit_post') }}" method="POST" enctype="multipart/form-data">
                 <input type="text" name="itinerary_name" placeholder="行程名稱" class="translatable" required>
-    
+
                 <label for="start_time" class="translatable">開始時間：</label>
                 <input type="datetime-local" name="start_time" required>
-    
+
                 <label for="end_time" class="translatable">結束時間：</label>
                 <input type="datetime-local" name="end_time" required>
-    
-                <label for="location" class="translatable">地址：</label>
-                <div class="location-input">
-                    <input type="text" id="location" name="location" placeholder="地址" class="translatable" required>
-                    <button type="button" onclick="searchAddress()" class="translatable">查詢</button>
-                </div>
-    
-                <label class="translatable">選擇出發點（點擊地圖）</label>
+
+                <input type="text" id="location" name="location" placeholder="地址" class="translatable" required>
+                <button type="button" onclick="searchAddress()">地址查詢</button>
+
+                <h2 class="translatable">點選地圖以選擇出發點</h2>
                 <div id="map"></div>
-    
                 <input type="number" id="longitude" name="longitude" step="0.000001" placeholder="經度" class="translatable" required>
                 <input type="number" id="latitude" name="latitude" step="0.000001" placeholder="緯度" class="translatable" required>
-            </div>
-    
-            <!-- 右欄：詳細內容 -->
-            <div class="form-right">
-                <label for="description" class="translatable">景點介紹：</label>
-                <textarea name="description" rows="6" placeholder="請輸入景點介紹..." class="translatable" required></textarea>
-    
-                <label for="price" class="translatable">價錢：</label>
-                <input type="number" name="price" placeholder="價錢" class="translatable" required>
-    
+
+                <textarea name="description"  class="translatable"rows="4" placeholder="景點介紹" required></textarea>
+                <input type="number" name="price" placeholder="價錢" required>
+
                 <label for="photos" class="translatable">添加景點照片：</label>
                 <input type="file" name="photos" accept="image/*" multiple>
-    
+
                 <button type="submit" class="translatable">提交</button>
-            </div>
+            </form>
         </div>
     </main>
 
@@ -233,7 +221,6 @@
                     }
                 });
 
-                // 確保天氣查詢表單還能用
                 bindWeatherForm();
             }
         })
