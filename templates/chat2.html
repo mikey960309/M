@@ -10,7 +10,7 @@
 <body>
     <div>
         <header>
-            <h1 class="translatable">個人頁面</h1>
+            <h1 class="translatable">聊天室</h1>
             <div class="auth-links">
                 <a href="/logout" >Logout</a>
             </div>
@@ -74,8 +74,6 @@
 </div>
     <script>
         const socket = io();
-
-        // 頁面載入時滾到底部
         window.onload = function() {
             const chatBox = document.getElementById('chatBox');
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -92,18 +90,13 @@
             const recipientId = '{{ recipient_id }}';
 
             if (message.trim() !== "") {
-                // 先在本地顯示訊息
                 const chatBox = document.getElementById('chatBox');
                 const messageElement = document.createElement('p');
                 messageElement.className = 'message-right';
                 messageElement.innerHTML = `<strong>你:</strong> ${message} <small>剛剛</small>`;
                 chatBox.appendChild(messageElement);
                 chatBox.scrollTop = chatBox.scrollHeight;
-
-                // 發送訊息到後端
                 socket.emit('send_message', { message: message, recipient_id: recipientId });
-
-                // 清空輸入框
                 document.getElementById('messageInput').value = '';
             }
         });
@@ -121,7 +114,6 @@
             }
         });
 
-        // 搜尋用戶並建立聊天連結
         document.getElementById('searchUserForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const username = event.target.username.value;

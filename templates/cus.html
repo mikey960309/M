@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/cus.css') }}?v=1.0">
-  <title class="translatable">旅遊推薦系統</title>
+  <title class="translatable">規劃行程</title>
 </head>
 <body>
   <nav>
@@ -49,13 +49,12 @@
   <header>
     <h1 class="translatable">旅遊推薦系統</h1>
     <div class="auth-links">
-      <a href="/logout">登出</a>
+      <a href="/logout">Logout</a>
     </div>
   </header>
 
   <main>
     <div class="cus-layout">
-      <!-- 左側功能區 -->
       <div class="cus-left">
         <div class="card">
           <h2 class="translatable">點選地圖以選擇出發點或自行輸入經緯度</h2>
@@ -79,19 +78,13 @@
           <div id="sorted-itinerary-list"></div>
         </div>
 
-        <!-- 推薦飯店放在這裡 -->
         <div class="hotel-section">
           <h2>推薦飯店：</h2>
           <div id="hotel-recommendations-display" class="hotel-recommendations"></div>
         </div>
       </div>
 
-      <!-- 右側：公車資訊 -->
       <div class="cus-right">
-        <h2 class="translatable">🚌 公車資訊</h2>
-        <button onclick="fetchBusRoutes()">取得淡水公車路線</button>
-        <ul id="bus-list"></ul>
-
         <div class="bus-card">
           <h3 class="translatable">📍 公車即將停靠的站點</h3>
           <input id="eta-bus-number" placeholder="輸入公車號碼，例如：紅27" class="translatable">

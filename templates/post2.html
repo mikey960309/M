@@ -71,7 +71,7 @@
                 <input type="text" id="location" name="location" placeholder="地址" class="translatable" required>
                 <button type="button" onclick="searchAddress()">地址查詢</button>
 
-                <h2 class="translatable">點選地圖以選擇出發點</h2>
+                <h2 class="translatable">點選地圖以選擇景點或自行輸入經緯度</h2>
                 <div id="map"></div>
                 <input type="number" id="longitude" name="longitude" step="0.000001" placeholder="經度" class="translatable" required>
                 <input type="number" id="latitude" name="latitude" step="0.000001" placeholder="緯度" class="translatable" required>
@@ -115,7 +115,6 @@
             }
 
             const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent('台灣 ' + address)}`;
-
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
