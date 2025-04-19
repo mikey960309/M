@@ -796,7 +796,7 @@ def chat(username):
             cursor.close()
         if connection and connection.is_connected():
             connection.close()
-    return render_template('chat2.html', chat_messages=user_messages, recipient_id=recipient_id, contacts=contacts)
+    return render_template('chat2.html', chat_messages=user_messages, recipient_id=recipient_id, contacts=contacts, recipient_username=username)
 
 @app.route('/chat_list')
 def chat_list():

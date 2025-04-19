@@ -83,6 +83,7 @@ main {
 }
 .chat-box p {
     margin: 10px 0;
+    word-wrap: break-word;
 }
 .chat-input {
     display: flex;
@@ -110,4 +111,33 @@ main {
     border-radius: 1px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+}
+.message-left {
+    display: flex;
+    justify-content: flex-start;
+    margin: 10px 0;
+}
+
+.message-left p {
+    background-color: #e1f5fe; /* 淺藍色 */
+    padding: 10px 15px;
+    border-radius: 10px 10px 10px 0px;
+    max-width: 60%;
+    word-wrap: break-word;
+    font-size: 14px;
+}
+
+.message-right {
+    display: flex;
+    justify-content: flex-end;
+    margin: 10px 0;
+}
+
+.message-right p {
+    background-color: #c8e6c9; /* 淺綠色 */
+    padding: 10px 15px;
+    border-radius: 10px 10px 0px 10px;
+    max-width: 60%;
+    word-wrap: break-word;
+    font-size: 14px;
 }

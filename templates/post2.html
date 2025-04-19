@@ -1,94 +1,71 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>刊登 - 旅遊推薦系統</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <title>刊登 - 旅遊推薦系統</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/post.css') }}?v=1.0">
 </head>
 <body>
-    <div>
-        <header>
-            <h1 class="translatable">刊登頁面</h1>
-            <div class="auth-links">
-                <a href="/logout" >Logout</a>
-            </div>
-        </header>
-    </div>
+    <header>
+        <h1 class="translatable">刊登頁面</h1>
+        <div class="auth-links">
+            <a href="/logout">Logout</a>
+        </div>
+    </header>
+
     <nav>
         <a href="{{ url_for('index') }}" class="translatable">首頁</a>
-        <a href="{{ url_for('chat_list')}}" class="translatable">聊天室</a>
+        <a href="{{ url_for('chat_list') }}" class="translatable">聊天室</a>
         <a href="{{ url_for('post') }}" class="translatable">刊登</a>
         <a href="{{ url_for('cus') }}" class="translatable">規劃行程</a>
         <a href="{{ url_for('user_page') }}" class="translatable">個人頁面</a>
-
-        <div style="margin: 0px auto 0; width: 85%; background-color: #f5f5f5; padding: 12px; border-radius: 8px; text-align: center;">
-            <h3 class="translatable" style="margin-bottom: 10px; font-size: 16px;">🌤 天氣查詢</h3>
-            <form id="weather-form" style="display: flex; flex-direction: column; gap: 6px;">
-              <select id="city-select" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-                <option value="Taipei" class="translatable">台北</option>
-                <option value="Tamsui" selected class="translatable">淡水</option>
-                <option value="Kaohsiung" class="translatable">高雄</option>
-                <option value="Taichung" class="translatable">台中</option>
-                <option value="Hsinchu" class="translatable">新竹</option>
-                <option value="Tainan" class="translatable">台南</option>
-                <option value="Keelung" class="translatable">基隆</option>
-              </select>
-              <button type="submit" class="translatable" style="padding: 6px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                查詢
-              </button>
-            </form>
-            <div id="weather-result" style="font-size: 14px; margin-top: 8px; text-align: left; line-height: 1.6;"></div>
-        </div>
-
-        <div class="translate-box" style="margin: 20px auto; text-align: center;">
-            <select id="language-select" style="padding: 6px; border-radius: 4px;">
-              <option value="EN">English</option>
-              <option value="KO">한국인</option>
-              <option value="JA">日本語</option>
-              <option value="DE">Deutsch</option>
-              <option value="FR">Français</option>
-            </select>
-            <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
-              翻譯網頁
-            </button>
-        </div>
     </nav>
+
     <main>
         <div class="form-container">
             <h2 class="translatable">刊登行程</h2>
             <form action="{{ url_for('submit_post') }}" method="POST" enctype="multipart/form-data">
-                <input type="text" name="itinerary_name" placeholder="行程名稱" class="translatable" required>
+                <div class="form-flex-layout">
+                    <!-- 左邊地圖區塊 -->
+                    <div class="form-left">
+                        <h3 class="translatable">點選地圖以選擇景點或自行輸入經緯度</h3>
+                        <div id="map"></div>
+                        <label for="longitude" class="translatable">經度：</label>
+                        <input type="number" id="longitude" name="longitude" step="0.000001" placeholder="經度" class="translatable" required>
+                        <label for="latitude" class="translatable">緯度：</label>
+                        <input type="number" id="latitude" name="latitude" step="0.000001" placeholder="緯度" class="translatable" required>
+                    </div>
 
-                <label for="start_time" class="translatable">開始時間：</label>
-                <input type="datetime-local" name="start_time" required>
+                    <!-- 右邊表單區塊 -->
+                    <div class="form-right">
+                        <input type="text" name="itinerary_name" placeholder="行程名稱" class="translatable" required>
+                        <label for="start_time" class="translatable">開始時間：</label>
+                        <input type="datetime-local" name="start_time" required>
+                        <label for="end_time" class="translatable">結束時間：</label>
+                        <input type="datetime-local" name="end_time" required>
 
-                <label for="end_time" class="translatable">結束時間：</label>
-                <input type="datetime-local" name="end_time" required>
+                        <input type="text" id="location" name="location" placeholder="地址" class="translatable" required>
+                        <button type="button" onclick="searchAddress()">地址查詢</button>
 
-                <input type="text" id="location" name="location" placeholder="地址" class="translatable" required>
-                <button type="button" onclick="searchAddress()">地址查詢</button>
+                        <label for="description" class="translatable">景點介紹：</label>
+                        <textarea name="description" class="translatable" rows="4" placeholder="景點介紹" required></textarea>
 
-                <h2 class="translatable">點選地圖以選擇景點或自行輸入經緯度</h2>
-                <div id="map"></div>
-                <input type="number" id="longitude" name="longitude" step="0.000001" placeholder="經度" class="translatable" required>
-                <input type="number" id="latitude" name="latitude" step="0.000001" placeholder="緯度" class="translatable" required>
+                        <input type="number" name="price" placeholder="價錢" required>
+                        <label for="photos" class="translatable">添加景點照片：</label>
+                        <input type="file" name="photos" accept="image/*" multiple>
 
-                <textarea name="description"  class="translatable"rows="4" placeholder="景點介紹" required></textarea>
-                <input type="number" name="price" placeholder="價錢" required>
-
-                <label for="photos" class="translatable">添加景點照片：</label>
-                <input type="file" name="photos" accept="image/*" multiple>
-
-                <button type="submit" class="translatable">提交</button>
+                        <button type="submit" class="translatable">提交</button>
+                    </div>
+                </div>
             </form>
         </div>
     </main>
 
     <script>
-        const map = L.map('map').setView([25.033964, 121.564472], 8);
+        const map = L.map('map').setView([25.033964, 121.564472], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap 貢獻者'
         }).addTo(map);
@@ -143,88 +120,6 @@
                     alert("地理編碼失敗，請稍後再試");
                 });
         }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            const weatherForm = document.getElementById("weather-form");
-            if (weatherForm) {
-                weatherForm.addEventListener("submit", function (event) {
-                event.preventDefault();
-                const city = document.getElementById("city-select").value;
-
-                fetch("/weather", {
-                    method: "POST",
-                    body: new URLSearchParams({ city: city }),
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                    let resultDiv = document.getElementById("weather-result");
-                    if (data.error) {
-                        resultDiv.innerHTML = `<p style="color: red;"> ${data.error}</p>`;
-                    } else {
-                        resultDiv.innerHTML = `
-                        🌡 ${data.temp}°C<br>
-                        ☁️ ${data.description}<br>
-                        💧 ${data.humidity}%<br>
-                        🌬 ${data.wind_speed} m/s
-                        `;
-                    }
-                    })
-                    .catch(error => {
-                    console.error("查詢錯誤:", error);
-                    document.getElementById("weather-result").innerHTML = "❌ 無法取得資料";
-                    });
-                });
-            }
-            });
-            function translatePage() {
-        const targetLang = document.getElementById("language-select").value;
-        const elements = document.querySelectorAll(".translatable");
-
-        const texts = [];
-        const map = [];
-
-        elements.forEach(el => {
-            if (el.tagName === "INPUT" && el.placeholder) {
-                texts.push(el.placeholder);
-                map.push({ el, type: "placeholder" });
-            } else if (el.children.length === 0) {
-                texts.push(el.textContent.trim());
-                map.push({ el, type: "text" });
-            }
-        });
-
-        fetch("/translate", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                text: texts.join("\n___SPLIT___\n"),
-                target_lang: targetLang
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert("翻譯錯誤：" + data.error);
-            } else {
-                const translated = data.translation.split("\n___SPLIT___\n");
-                map.forEach((item, i) => {
-                    if (translated[i]) {
-                        if (item.type === "placeholder") {
-                            item.el.placeholder = translated[i];
-                        } else {
-                            item.el.textContent = translated[i];
-                        }
-                    }
-                });
-
-                bindWeatherForm();
-            }
-        })
-        .catch(error => console.error("翻譯錯誤:", error));
-    }
     </script>
 </body>
 </html>

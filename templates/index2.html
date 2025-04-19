@@ -79,8 +79,7 @@
                         <p class="translatable"><strong>導遊：</strong>{{ itinerary.username }}</p>
                         <p class="translatable"><strong>期間：</strong>{{ itinerary.start }} ~ {{ itinerary.end }}</p>
                         <p class="translatable"><strong>價格：</strong>NT${{ itinerary.price }}</p>
-                        <p class="translatable"><strong>簡介：</strong>{{ itinerary.desc }}</p>
-                        <p class="location translatable"><strong>景點：</strong>{{ itinerary.locations | join(', ') }}</p>
+                        <p class="location translatable"><strong>地址：</strong>{{ itinerary.locations | join(', ') }}</p>
                         <a href="{{ url_for('case', id=itinerary.id) }}" class="view-link translatable">查看詳細</a>
                     </div>
                 </div>
