@@ -78,6 +78,19 @@
             </form>
         </div>
     </aside>
+    
+    <section class="my-itineraries">
+        <h2 class="translatable">刊登的行程</h2>
+        <ul>
+            {% if user_itineraries %}
+                {% for itinerary in user_itineraries %}
+                    <li><a href="{{ url_for('case', id=itinerary[0]) }}">{{ itinerary[1] }}</a></li>
+                {% endfor %}
+            {% else %}
+                <li class="translatable">目前沒有刊登任何行程。</li>
+            {% endif %}
+        </ul>
+    </section>
 
     <script>
         const userId = "{{ user_info[1] }}";  // 使用者名稱

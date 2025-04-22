@@ -10,7 +10,7 @@
 <body>
     <div>
         <header>
-            <h1 class="translatable">聊天室 - {{ recipient_username }}</h1>
+            <h1 class="translatable">聊天室</h1>
             <div class="auth-links">
                 <a href="/logout" >Logout</a>
             </div>
@@ -57,22 +57,28 @@
       </nav>
 
     <div class="chat-container">
-    <div class="chat-box" id="chatBox">
-        {% for message in chat_messages %}
-            <div class="{% if message[0] == session['user_id'] %}message-right{% else %}message-left{% endif %}">
-                <p>
-                    {{ message[2] }} <small>{{ message[3] }}</small>
-                </p>
-            </div>
-        {% endfor %}
-    </div>
 
-    <form id="messageForm" class="chat-input">
-        <input type="hidden" id="recipientId" value="{{ recipient_id }}">
-        <input type="text" id="messageInput" placeholder="輸入訊息..." class="translatable" required>
-        <button type="submit" class="translatable">送出</button>
-    </form>
-</div>
+        <div class="chat-box" id="chatBox">
+            <div class="chat-user-header">
+                <a href="{{ url_for('public_user_page', username=recipient_username) }}" class="user-link">
+                    {{ recipient_username }}
+                </a>
+            </div>
+            {% for message in chat_messages %}
+                <div class="{% if message[0] == session['user_id'] %}message-right{% else %}message-left{% endif %}">
+                    <p>
+                        {{ message[2] }} <small>{{ message[3] }}</small>
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <form id="messageForm" class="chat-input">
+            <input type="hidden" id="recipientId" value="{{ recipient_id }}">
+            <input type="text" id="messageInput" placeholder="輸入訊息..." class="translatable" required>
+            <button type="submit" class="translatable">送出</button>
+        </form>
+    </div>
     <script>
         const socket = io();
         window.onload = function() {

@@ -90,6 +90,8 @@
             {% else %}
             <p class="translatable">用戶資料未設定。</p>
             {% endif %}
+
+            
         </div>
     
         <div class="search-user-box">
@@ -100,6 +102,21 @@
                 <button id="search_button" class="translatable">搜尋</button>
             </div>
             <ul id="user-suggestions" class="suggestion-list"></ul>
+
+            <section class="my-itineraries">
+                <h2 class="translatable">我刊登的行程</h2>
+                <ul>
+                    {% if user_itineraries %}
+                        {% for itinerary in user_itineraries %}
+                            <li>
+                                <a href="{{ url_for('case', id=itinerary[0]) }}">{{ itinerary[1] }}</a>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="translatable">目前沒有刊登任何行程。</li>
+                    {% endif %}
+                </ul>
+            </section>
         </div>
     </main>
 

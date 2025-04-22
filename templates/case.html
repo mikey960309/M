@@ -49,7 +49,7 @@
 
     <div>
         <header>
-            <h1 class="translatable">個人頁面</h1>
+            <h1 class="translatable">方案頁面</h1>
             <div class="auth-links">
                 <a href="/logout" >Logout</a>
             </div>
@@ -83,6 +83,17 @@
 
         <form id="comment-form" class="comment-input" method="POST" action="/add_comment/{{ itinerary[0] }}">
             <textarea name="comment" placeholder="留下你的留言..." class="translatable" required></textarea>
+        
+            <label class="translatable" style="margin-top:10px; display:block;">評分：</label>
+            <select id="rating" name="rating" required style="padding:5px; border-radius:4px; margin-bottom:10px;">
+                <option value="">請選擇</option>
+                <option value="5">5分</option>
+                <option value="4">4分</option>
+                <option value="3">3分</option>
+                <option value="2">2分</option>
+                <option value="1">1分</option>
+            </select>
+        
             <button type="submit" class="translatable">送出</button>
         </form>
     </div>
@@ -100,7 +111,8 @@
                     commentsDiv.innerHTML = ''; // 清空現有留言
                     comments.forEach(comment => {
                         const commentDiv = document.createElement('div');
-                        commentDiv.textContent = `${comment.username}: ${comment.comment_text} (時間: ${new Date(comment.timestamp).toLocaleString()})`;
+                        const stars = '⭐'.repeat(comment.rating || 0);
+                        commentDiv.textContent = `${comment.username} ：${stars} ${comment.comment_text} (時間: ${new Date(comment.timestamp).toLocaleString()})`;
                         commentsDiv.appendChild(commentDiv);
                     });
                 })
@@ -111,14 +123,15 @@
         document.getElementById('comment-form').addEventListener('submit', function(event) {
             event.preventDefault(); // 防止表單默認提交
     
-            const comment = this.comment.value; // 獲取留言內容
+            const comment = this.comment.value;
+            const rating = this.rating.value;
     
             fetch(`/add_comment/${itineraryId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ comment: comment }) // 將留言內容轉為 JSON
+                body: JSON.stringify({ comment: comment, rating: rating }) // 將留言內容轉為 JSON
             })
             .then(response => response.json())
             .then(data => {

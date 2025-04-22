@@ -106,3 +106,40 @@ main {
 .comment-input button:hover {
     background-color: #0056b3; /* 鼠標懸停時的顏色變化 */
 }
+.my-itineraries {
+    margin-left: 200px;
+    margin-top: 20px;
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.my-itineraries h2 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    color: #0062cc;
+}
+
+.my-itineraries ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 0;
+}
+
+.my-itineraries li {
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.my-itineraries li a {
+    color: #007BFF;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.my-itineraries li a:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}

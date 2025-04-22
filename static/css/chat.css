@@ -141,3 +141,23 @@ main {
     word-wrap: break-word;
     font-size: 14px;
 }
+.chat-user-header {
+    width: 200px;
+    position: sticky; /* ✅ sticky 而不是普通流動 */
+    top: 0; /* ✅ 黏在 chat-box 的最上方 */
+    background-color: #f9f9f9; /* ✅ 背景色，避免滑動時重疊不好看 */
+    text-align: right;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-bottom: 1px solid #ddd;
+    z-index: 10; /* ✅ 確保在訊息泡泡之上 */
+}
+
+.chat-user-header .user-link {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.chat-user-header .user-link:hover {
+    text-decoration: underline;
+}

@@ -3,8 +3,11 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/cus.css') }}?v=1.0">
   <title class="translatable">規劃行程</title>
@@ -47,7 +50,7 @@
   </nav>
 
   <header>
-    <h1 class="translatable">旅遊推薦系統</h1>
+    <h1 class="translatable">規劃行程</h1>
     <div class="auth-links">
       <a href="/logout">Logout</a>
     </div>
@@ -120,7 +123,7 @@
   <script>
     const map = L.map('map').setView([25.033964, 121.564472], 8);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap 貢獻者'
+      attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
     let marker;
@@ -190,7 +193,6 @@
     function sortItinerary() {
       const startLatitude = document.getElementById("start-latitude").value;
       const startLongitude = document.getElementById("start-longitude").value;
-
       if (!startLatitude || !startLongitude) {
         alert("請點選地圖選擇出發點！");
         return;
@@ -237,51 +239,46 @@
               const nameElem = document.createElement('div');
               nameElem.textContent = name;
               sortedItineraryList.appendChild(nameElem);
-        });
-
-        const last = itinerariesData.find(it => it.id === data.sorted_itinerary_ids[data.sorted_itinerary_ids.length - 1]);
-        const overpassQuery = `
-          [out:json][timeout:25];
-          (
-            node["tourism"="hotel"](around:8000,${last.latitude},${last.longitude});
-            way["tourism"="hotel"](around:8000,${last.latitude},${last.longitude});
-            relation["tourism"="hotel"](around:8000,${last.latitude},${last.longitude});
-          );
-          out center;
-        `;
-        const overpassUrl = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(overpassQuery);
-
-        fetch(overpassUrl)
-          .then(res => res.json())
-          .then(json => {
-            const hotels = json.elements
-              .filter(h => h.tags && h.tags.name)
-              .slice(0, 5);
-
-            const hotelDisplay = document.getElementById('hotel-recommendations-display');
-            hotelDisplay.innerHTML = '';
-
-            if (hotels.length === 0) {
-              hotelDisplay.innerHTML = "<p style='color:gray;'>⚠️ 此地附近沒有找到飯店</p>";
-              return;
-            }
-
-            hotels.forEach(h => {
-              const stars = h.tags.stars ? `（${h.tags.stars}星）` : '';
-              hotelDisplay.innerHTML += `
-                <div class="hotel-item">🏨 ${h.tags.name} ${stars}</div>
-              `;
             });
-          })
-          .catch(err => {
-            console.error("Overpass 查詢錯誤：", err);
-            document.getElementById('hotel-recommendations-display').innerHTML =
-              "<p style='color:red;'>⚠️ 飯店推薦查詢失敗</p>";
-          });
-                  }
-                })
-                .catch(error => console.error('Error:', error));
-            }
+
+            const last = itinerariesData.find(it => it.id === data.sorted_itinerary_ids[data.sorted_itinerary_ids.length - 1]);
+            console.log("最後排序景點：", last);
+
+            const overpassQuery = `
+              [out:json][timeout:25];
+              node["tourism"="hotel"](around:3000,${last.longitude},${last.latitude});
+              out body;
+            `;
+            const overpassUrl = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(overpassQuery);
+
+            console.log("Overpass URL:", overpassUrl);
+
+            fetch(overpassUrl)
+              .then(res => res.json())
+              .then(json => {
+                console.log("Overpass 回傳資料:", json);
+                const hotels = json.elements
+                  .filter(h => h.tags && h.tags.name)
+                  .sort((a, b) => {
+                    const rateA = parseFloat(a.tags.stars) || 0;
+                    const rateB = parseFloat(b.tags.stars) || 0;
+                    return rateB - rateA;
+                  })
+                  .slice(0, 5);
+                const hotelDisplay = document.getElementById('hotel-recommendations-display');
+                hotelDisplay.innerHTML = '';
+                hotels.forEach(h => {
+                  const stars = h.tags.stars ? `（${h.tags.stars}星）` : '';
+                  hotelDisplay.innerHTML += `<div class="hotel-item">🏨 ${h.tags.name} ${stars}</div>`;
+                });
+              })
+              .catch(err => {
+                console.error("Overpass 查詢錯誤：", err);
+              });
+          }
+        })
+        .catch(error => console.error('Error:', error));
+    }
 
     document.addEventListener("DOMContentLoaded", function () {
             const weatherForm = document.getElementById("weather-form");

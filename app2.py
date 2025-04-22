@@ -151,6 +151,7 @@ def user_page():
     success_message = None
     error_message = None
     user_comments = []
+    user_itineraries = []
 
     try:
         connection = mysql.connector.connect(**db_config)
@@ -188,6 +189,15 @@ def user_page():
             """
             cursor.execute(comments_sql, (user_info[1],))
             user_comments = cursor.fetchall()
+
+            itineraries_sql = """
+                SELECT id, itinerary_name
+                FROM itineraries
+                WHERE userid = %s
+                ORDER BY id DESC
+            """
+            cursor.execute(itineraries_sql, (session['user_id'],))
+            user_itineraries = cursor.fetchall()
         else:
             user_info = ("未設定", None, None, None, None, session['user_id'])
 
@@ -201,15 +211,17 @@ def user_page():
             connection.close()
 
     return render_template('user_page.html',
-                           user_info=user_info,
-                           success_message=success_message,
-                           error_message=error_message,
-                           user_comments=user_comments)
+                            user_info=user_info,
+                            success_message=success_message,
+                            error_message=error_message,
+                            user_comments=user_comments,
+                            user_itineraries=user_itineraries)
 
 @app.route('/user/<username>')
 def public_user_page(username):
     user_info = None
     user_comments = []
+    user_itineraries = []
 
     try:
         connection = mysql.connector.connect(**db_config)
@@ -232,6 +244,15 @@ def public_user_page(username):
         cursor.execute(comments_sql, (username,))
         user_comments = cursor.fetchall()
 
+        itineraries_sql = """
+            SELECT id, itinerary_name
+            FROM itineraries
+            WHERE userid = (SELECT user_id FROM users WHERE username = %s)
+            ORDER BY id DESC
+        """
+        cursor.execute(itineraries_sql, (username,))
+        user_itineraries = cursor.fetchall()
+
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤'), 500
@@ -243,7 +264,8 @@ def public_user_page(username):
 
     return render_template('public_user_page.html',
                            user_info=user_info,
-                           user_comments=user_comments)
+                           user_comments=user_comments,
+                           user_itineraries=user_itineraries)
 
 @app.route('/search_usernames')
 def search_usernames():
@@ -508,9 +530,6 @@ def cus_AddItinerary(name):
 @app.route('/cus/ScheduleItinerary', methods=['POST'])
 def cus_ScheduleItinerary():
     data = request.get_json()
-    if not data:
-        return jsonify({'error': '請求內容不是有效的 JSON'}), 400
-
     start_latitude = data.get('start_latitude')
     start_longitude = data.get('start_longitude')
     itineraries = data.get('itineraries', [])
@@ -518,7 +537,8 @@ def cus_ScheduleItinerary():
     if start_latitude is None or start_longitude is None or not itineraries:
         return jsonify({'error': '缺少必要的資料：出發點經緯度或方案資料'}), 400
 
-    coords = [[float(start_longitude), float(start_latitude)]]  # [lng, lat]
+    # ✅ 修正：出發點為 [經度, 緯度]
+    coords = [[float(start_longitude), float(start_latitude)]]  # ✅ start: 經度, 緯度
     id_mapping = []
 
     for it in itineraries:
@@ -526,7 +546,7 @@ def cus_ScheduleItinerary():
         lng = it.get("longitude")
         if lat is None or lng is None:
             continue
-        coords.append([float(lng), float(lat)]) 
+        coords.append([float(lat), float(lng)])  # ✅ 經度, 緯度
         id_mapping.append(it.get("id"))
 
     if len(coords) <= 1:
@@ -537,6 +557,7 @@ def cus_ScheduleItinerary():
         "Authorization": "5b3ce3597851110001cf62489e3b774658314350b6f0aa5afac5b7e78ffda53643fbf995c46ecd9a",
         "Content-Type": "application/json"
     }
+
     body = {
         "jobs": [
             {"id": idx + 1, "location": coord}
@@ -545,25 +566,24 @@ def cus_ScheduleItinerary():
         "vehicles": [{
             "id": 0,
             "profile": "driving-car",
-            "start": coords[0],
+            "start": coords[0],  # ✅ 出發點 [lng, lat]
             "end": coords[0]
         }]
     }
-    print("Request body:", json.dumps(body, indent=2))
+
+    print("Request body:", json.dumps(body, indent=2))  # ✅ 檢查印出應為 [lng, lat]
+
     response = requests.post(url, json=body, headers=headers)
 
     if response.status_code == 200:
         result = response.json()
         steps = result["routes"][0]["steps"]
-        sorted_itinerary_ids = []
-        for step in steps:
-            job = step.get("job")
-            if job and 1 <= job <= len(id_mapping):
-                sorted_itinerary_ids.append(id_mapping[job - 1])
+        sorted_itinerary_ids = [id_mapping[step["job"] - 1] for step in steps if step.get("job")]
         return jsonify({'sorted_itinerary_ids': sorted_itinerary_ids})
     else:
-        print("API Error:", response.status_code, response.text)
-        return jsonify({'error': 'OpenRouteService API呼叫失敗', 'details': response.text}), 500
+        print("API Error:", response.text)
+        return jsonify({'error': 'OpenRouteService API呼叫失敗'}), 500
+    return render_template('cus.html')
 
 @app.route('/case/<int:id>')
 def case(id):
@@ -862,9 +882,12 @@ def add_comment(itinerary_id):
 
         if request.is_json:
             data = request.get_json()
-            comment = data.get('comment')
         else:
-            comment = request.form.get('comment')
+            data = request.form
+
+        # 再從 data 拿 comment、rating
+        comment = data.get('comment')
+        rating = data.get('rating')
         
         if not comment or comment.strip() == "":
             return jsonify({'error': '留言內容不能為空'}), 400
@@ -872,8 +895,8 @@ def add_comment(itinerary_id):
         user_id = session['user_id']
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
-        query = "INSERT INTO itinerary_comments (itinerary_id, user_id, comment_text) VALUES (%s, %s, %s)"
-        cursor.execute(query, (itinerary_id, user_id, comment))
+        query = "INSERT INTO itinerary_comments (itinerary_id, user_id, comment_text, rating) VALUES (%s, %s, %s, %s)"
+        cursor.execute(query, (itinerary_id, user_id, comment, rating))
         connection.commit()
         return jsonify({'message': '留言成功'})
     except mysql.connector.Error as err:
@@ -893,7 +916,7 @@ def get_comments(itinerary_id):
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor(dictionary=True)
         query = """
-            SELECT u.username, ic.comment_text, ic.timestamp
+            SELECT u.username, ic.comment_text, ic.rating, ic.timestamp
             FROM itinerary_comments ic
             JOIN users u ON ic.user_id = u.user_id
             WHERE ic.itinerary_id = %s
