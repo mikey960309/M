@@ -152,54 +152,65 @@ def user_page():
     error_message = None
     user_comments = []
     user_itineraries = []
+    user_info = None  # ✅ 先定義
 
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
 
+        # 先抓使用者資料，不管 GET 還是 POST 都要用到
+        user_sql = """
+            SELECT name, username, birth_year, birth_month, birth_day, phone 
+            FROM users WHERE user_id = %s
+        """
+        cursor.execute(user_sql, (session['user_id'],))
+        user_info = cursor.fetchone()
+
+        if not user_info:
+            return render_template('error.html', error_message="使用者資料不存在"), 404
+
         if request.method == 'POST':
+            print("收到 POST 請求")
             name = request.form['name']
-            username = request.form['username']
             phone = request.form['phone']
             birth_year = request.form['birth_year']
             birth_month = request.form['birth_month']
             birth_day = request.form['birth_day']
-
+            print("更新內容：", name, phone, birth_year, birth_month, birth_day)
             update_sql = """
                 UPDATE users
-                SET name = %s, username = %s, phone = %s, birth_year = %s, birth_month = %s, birth_day = %s
+                SET name = %s, phone = %s, birth_year = %s, birth_month = %s, birth_day = %s
                 WHERE user_id = %s
             """
-            values = (name, username, phone, int(birth_year), int(birth_month), int(birth_day), session['user_id'])
+            values = (name, phone, int(birth_year), int(birth_month), int(birth_day), session['user_id'])
             cursor.execute(update_sql, values)
             connection.commit()
             success_message = '資料更新成功'
 
-        user_sql = "SELECT name, username, birth_year, birth_month, birth_day, phone FROM users WHERE user_id = %s"
-        cursor.execute(user_sql, (session['user_id'],))
-        user_info = cursor.fetchone()
+            # 更新後重新查一次資料
+            cursor.execute(user_sql, (session['user_id'],))
+            user_info = cursor.fetchone()
 
-        if user_info:
-            comments_sql = """
-                SELECT uc.comment_text, uc.timestamp, u.username
-                FROM user_comments uc
-                JOIN users u ON uc.user_id = u.user_id
-                WHERE uc.username = %s
-                ORDER BY uc.timestamp
-            """
-            cursor.execute(comments_sql, (user_info[1],))
-            user_comments = cursor.fetchall()
+        # 撈留言
+        comments_sql = """
+            SELECT uc.comment_text, uc.timestamp, u.username
+            FROM user_comments uc
+            JOIN users u ON uc.user_id = u.user_id
+            WHERE uc.username = %s
+            ORDER BY uc.timestamp
+        """
+        cursor.execute(comments_sql, (user_info[1],))
+        user_comments = cursor.fetchall()
 
-            itineraries_sql = """
-                SELECT id, itinerary_name
-                FROM itineraries
-                WHERE userid = %s
-                ORDER BY id DESC
-            """
-            cursor.execute(itineraries_sql, (session['user_id'],))
-            user_itineraries = cursor.fetchall()
-        else:
-            user_info = ("未設定", None, None, None, None, session['user_id'])
+        # 撈行程
+        itineraries_sql = """
+            SELECT id, itinerary_name
+            FROM itineraries
+            WHERE userid = %s
+            ORDER BY id DESC
+        """
+        cursor.execute(itineraries_sql, (session['user_id'],))
+        user_itineraries = cursor.fetchall()
 
     except mysql.connector.Error as err:
         print(f"Error: {err}")
@@ -211,11 +222,11 @@ def user_page():
             connection.close()
 
     return render_template('user_page.html',
-                            user_info=user_info,
-                            success_message=success_message,
-                            error_message=error_message,
-                            user_comments=user_comments,
-                            user_itineraries=user_itineraries)
+                           user_info=user_info,
+                           success_message=success_message,
+                           error_message=error_message,
+                           user_comments=user_comments,
+                           user_itineraries=user_itineraries)
 
 @app.route('/user/<username>')
 def public_user_page(username):
@@ -546,7 +557,7 @@ def cus_ScheduleItinerary():
         lng = it.get("longitude")
         if lat is None or lng is None:
             continue
-        coords.append([float(lat), float(lng)])  # ✅ 經度, 緯度
+        coords.append([float(lng), float(lat)])  # ✅ 經度, 緯度
         id_mapping.append(it.get("id"))
 
     if len(coords) <= 1:

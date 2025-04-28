@@ -143,3 +143,17 @@ main {
     text-decoration: underline;
     color: #0056b3;
 }
+.chat-button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff; /* 藍色按鈕 */
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.chat-button:hover {
+    background-color: #0056b3;
+}

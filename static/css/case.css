@@ -201,3 +201,11 @@ main img {
         display: none;
     }
 }
+.guide-link {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.guide-link:hover {
+    text-decoration: underline;
+}

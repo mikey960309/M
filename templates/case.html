@@ -58,9 +58,18 @@
     
     <main>
         <h2 class="translatable">{{ itinerary[1] }}</h2> <!-- 行程名稱 -->
-        <p><strong class="translatable">導遊：</strong>{{ itinerary[8] or '未知導遊' }}</p>
+        <p>
+            <strong class="translatable">作者：</strong>
+            {% if itinerary[8] %}
+                <a href="{{ url_for('public_user_page', username=itinerary[8]) }}" class="guide-link">
+                    {{ itinerary[8] }}
+                </a>
+            {% else %}
+                未知作者
+            {% endif %}
+        </p>
         <p><strong class="translatable">時間：</strong>{{ itinerary[2] }} ~ {{ itinerary[3] }}</p>
-        <p><strong class="translatable">價格：</strong>NT${{ itinerary[5] }}</p>
+        <p><strong class="translatable">平均價格：</strong>NT${{ itinerary[5] }}</p>
         <p><strong class="translatable">地點：</strong>{{ itinerary[6] | join(', ') }}</p>
         <p><strong class="translatable">簡介：</strong></p>
         <p>{{ itinerary[4] }}</p>

@@ -81,6 +81,12 @@
           <div id="sorted-itinerary-list"></div>
         </div>
 
+        <div class="radius-setting">
+          <label for="hotel-search-radius">搜尋飯店範圍（公尺）：</label>
+          <input type="number" id="hotel-search-radius" value="3000" min="500" max="10000" step="100">
+        </div>
+        
+
         <div class="hotel-section">
           <h2>推薦飯店：</h2>
           <div id="hotel-recommendations-display" class="hotel-recommendations"></div>
@@ -244,10 +250,19 @@
             const last = itinerariesData.find(it => it.id === data.sorted_itinerary_ids[data.sorted_itinerary_ids.length - 1]);
             console.log("最後排序景點：", last);
 
+            //rolling decide node around
+            const radiusInput = document.getElementById('hotel-search-radius');
+            const searchRadius = radiusInput ? parseInt(radiusInput.value) || 3000 : 3000;
+
+            //the last node's around of circle and pos
             const overpassQuery = `
               [out:json][timeout:25];
-              node["tourism"="hotel"](around:3000,${last.longitude},${last.latitude});
-              out body;
+              (
+                node["tourism"="hotel"](around:${searchRadius},${last.latitude},${last.longitude});
+                way["tourism"="hotel"](around:${searchRadius},${last.latitude},${last.longitude});
+                relation["tourism"="hotel"](around:${searchRadius},${last.latitude},${last.longitude});
+              );
+              out center;
             `;
             const overpassUrl = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(overpassQuery);
 
