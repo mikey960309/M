@@ -28,14 +28,6 @@ db_config = {
     'port': int(os.getenv('DB_PORT', 5432)),
     'sslmode':  'require'
 }
-try:
-    conn = psycopg2.connect(**db_config)
-    print("✅ 成功連線到 PostgreSQL！")
-    conn.close()
-except Exception as e:
-    print("❌ 連線失敗：", e)
-conn = psycopg2.connect(**db_config)
-cursor = conn.cursor()
 
 WEATHER_API_KEY = "fb4936a1e7f8e2cd1901315a05686396"
 CLIENT_ID = "ae100890-ae89c86e-9a76-46e1"
