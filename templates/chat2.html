@@ -65,10 +65,8 @@
                 </a>
             </div>
             {% for message in chat_messages %}
-                <div class="{% if message[0] == session['user_id'] %}message-right{% else %}message-left{% endif %}">
-                    <p>
-                        {{ message[2] }} <small>{{ message[3] }}</small>
-                    </p>
+                <div class="{% if message.userid == session['user_id'] %}message-right{% else %}message-left{% endif %}">
+                    <p>{{ message.message }} <small>{{ message.timestamp }}</small></p>
                 </div>
             {% endfor %}
         </div>
@@ -130,18 +128,18 @@
             console.log('New message received:', data);
             const chatBox = document.getElementById('chatBox');
 
-            if (data.user_id == '{{ recipient_id }}' || data.recipient_id == '{{ session["user_id"] }}') {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'message-right'; // 外層 div，控制靠右
+            const currentUserId = '{{ session["user_id"] }}';  // 當前使用者
+            const isMine = data.user_id == currentUserId;
 
-                const messageP = document.createElement('p');
-                messageP.innerHTML = `<strong>你:</strong> ${message} <small>剛剛</small>`; // 內層 p，訊息本體
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isMine ? 'message-right' : 'message-left';
 
-                messageDiv.appendChild(messageP);
-                chatBox.appendChild(messageDiv);
-                chatBox.scrollTop = chatBox.scrollHeight;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
+            const messageP = document.createElement('p');
+            const senderLabel = isMine ? '你' : '對方';
+
+            messageDiv.appendChild(messageP);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
         });
 
         document.getElementById('searchUserForm').addEventListener('submit', function(event) {

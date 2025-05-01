@@ -85,6 +85,7 @@ body {
     margin-bottom: 20px;
     border-radius: 10px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    position: relative;
   }
   
   .card input[type="text"], .bus-card input {
@@ -168,4 +169,88 @@ body {
     margin: 20px auto;
     width: 85%;
   }
+  .suggestion-box {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+    background: white;
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+  }
   
+  .suggestion-box li {
+    padding: 8px 10px;
+    cursor: pointer;
+  }
+  
+  .suggestion-box li:hover {
+    background-color: #eee;
+  }
+
+  .sortable-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .sortable-list li {
+    padding: 10px 15px;
+    margin: 6px 0;
+    background-color: #e0f7fa;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    cursor: move;
+  }
+  .itinerary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .itinerary-header h3 {
+    margin: 0;
+    font-size: 1.2em;
+  }
+  
+  .delete-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  
+  .delete-btn:hover {
+    background-color: #0056b3;
+  }
+  .input-group {
+    display: flex;
+    flex-direction: row;       /* ✅ 確保是橫向 */
+    align-items: center;       /* 垂直置中對齊 */
+    gap: 10px;                 /* 元素間距 */
+    margin-top: 10px;
+  }
+  
+  .input-group input {
+    flex: 1;                   /* 輸入框佔滿剩餘空間 */
+    min-width: 0;              /* 防止 overflow */
+  }
+  
+  .input-group button {
+    white-space: nowrap;      /* ✅ 防止按鈕換行 */
+  }
+  .sort-button {
+    background-color: #ff9900;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }

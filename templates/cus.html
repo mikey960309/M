@@ -9,6 +9,7 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/cus.css') }}?v=1.0">
   <title class="translatable">規劃行程</title>
 </head>
@@ -66,10 +67,12 @@
           <input type="text" id="start-latitude" placeholder="出發點緯度" readonly class="translatable" />
         </div>
 
-        <div class="card">
-          <h2 class="translatable">輸入方案名稱</h2>
-          <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" class="translatable" />
-          <button onclick="addItinerary()" class="translatable">新增</button>
+        <div id="itinerary-input" class="card">
+          <h2>輸入方案名稱</h2>
+          <div class="input-group">
+            <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" autocomplete="off" />
+            <button onclick="addItinerary()">新增</button>
+          </div>
           <div id="itinerary-list"></div>
         </div>
 
@@ -78,7 +81,8 @@
         </div>
 
         <div class="sorted-itineraries">
-          <div id="sorted-itinerary-list"></div>
+          <ul id="sorted-itinerary-list" class="sortable-list"></ul>
+          <button class="sort-button" onclick="getSortedOrder()">確定排序</button>
         </div>
 
         <div class="radius-setting">
@@ -96,29 +100,29 @@
       <div class="cus-right">
         <div class="bus-card">
           <h3 class="translatable">📍 公車即將停靠的站點</h3>
-          <input id="eta-bus-number" placeholder="輸入公車號碼，例如：紅27" class="translatable">
-          <button onclick="queryByBusNumber()" class="translatable">查詢</button>
+          <div class="input-group">
+            <input id="eta-bus-number" placeholder="輸入公車號碼，例如：紅27" class="translatable">
+            <button onclick="queryByBusNumber()" class="translatable">查詢</button>
+          </div>
           <div id="bus-route-result"></div>
         </div>
 
         <div class="bus-card">
           <h3 class="translatable">🚏 即將進站的公車</h3>
-          <input id="eta-stop-name" placeholder="輸入站名，例如：捷運淡水站" class="translatable">
-          <button onclick="queryByStopName()" class="translatable">查詢</button>
+          <div class="input-group">
+            <input id="eta-stop-name" placeholder="輸入站名，例如：捷運淡水站" class="translatable">
+            <button onclick="queryByStopName()" class="translatable">查詢</button>
+          </div>
           <div id="bus-stop-result"></div>
         </div>
 
         <div class="bus-card">
           <h3 class="translatable">🔄 公車推薦（起點 ➝ 終點）</h3>
-          <input list="stops" id="start-stop" placeholder="起點站" class="translatable">
-          <input list="stops" id="end-stop" placeholder="終點站" class="translatable">
-          <datalist id="stops">
-            <option value="捷運淡水站">
-            <option value="紅毛城">
-            <option value="真理大學">
-            <option value="漁人碼頭">
-          </datalist>
-          <button onclick="fetchBusSuggestions()" class="translatable">查詢</button>
+          <div class="input-group">
+            <input list="stops" id="start-stop" placeholder="起點站" class="translatable">
+            <input list="stops" id="end-stop" placeholder="終點站" class="translatable">
+            <button onclick="fetchBusSuggestions()" class="translatable">查詢</button>
+          </div>
           <p id="bus-error" style="color:red;"></p>
           <div id="bus-suggestion"></div>
         </div>
@@ -164,26 +168,39 @@
     }
 
     function displayItinerary(itineraryData) {
-      if (itineraryData.error) {
-        alert(itineraryData.error);
-        return;
-      }
+  if (itineraryData.error) {
+    alert(itineraryData.error);
+    return;
+  }
 
-      const itineraryList = document.getElementById('itinerary-list');
-      const itineraryItem = document.createElement('div');
-      itineraryItem.classList.add('itinerary-item');
-      itineraryItem.innerHTML = `
-        <h3>${itineraryData.name}</h3>
-        <p>時間: ${itineraryData.start} ~ ${itineraryData.end}</p>
-        <p>介紹: ${itineraryData.desc}</p>
-        <p>價格: ${itineraryData.price}</p>
-        <p>地點: ${itineraryData.locations.join(', ')}</p>
-      `;
-      itineraryItem.dataset.id = itineraryData.id;
-      itineraryItem.dataset.latitude = itineraryData.latitude;
-      itineraryItem.dataset.longitude = itineraryData.longitude;
-      itineraryList.appendChild(itineraryItem);
+  const itineraryList = document.getElementById('itinerary-list');
+  const itineraryItem = document.createElement('div');
+  itineraryItem.classList.add('itinerary-item');
+  itineraryItem.dataset.id = itineraryData.id;
+  itineraryItem.dataset.latitude = itineraryData.latitude;
+  itineraryItem.dataset.longitude = itineraryData.longitude;
+
+  // 💡 用 innerHTML 產生外觀
+  itineraryItem.innerHTML = `
+    <div class="itinerary-header">
+      <h3>${itineraryData.name}</h3>
+      <button class="delete-btn">🗑 刪除</button>
+    </div>
+    <p>地點: ${itineraryData.locations.join(', ')}</p>
+  `;
+
+  // ✅ 綁定刪除事件（寫在 innerHTML 之後！）
+  itineraryItem.querySelector('.delete-btn').addEventListener('click', () => {
+    itineraryItem.remove(); // 從畫面中移除
+    const index = itineraries.findIndex(it => it.id === itineraryData.id);
+    if (index !== -1) {
+      itineraries.splice(index, 1); // 從資料陣列中移除
     }
+    displaySortedItineraries(); // 更新右側排序顯示（如有）
+  });
+
+  itineraryList.appendChild(itineraryItem);
+}
 
     function displaySortedItineraries() {
       const list = document.getElementById('sorted-itinerary-list');
@@ -240,12 +257,7 @@
           } else {
             const sortedItineraryList = document.getElementById('sorted-itinerary-list');
             sortedItineraryList.innerHTML = '最佳排序：';
-            data.sorted_itinerary_ids.forEach(id => {
-              const name = idToNameMap[id] || `ID:${id}`;
-              const nameElem = document.createElement('div');
-              nameElem.textContent = name;
-              sortedItineraryList.appendChild(nameElem);
-            });
+            displaySortedList(data.sorted_itinerary_ids, idToNameMap);
 
             const last = itinerariesData.find(it => it.id === data.sorted_itinerary_ids[data.sorted_itinerary_ids.length - 1]);
             console.log("最後排序景點：", last);
@@ -295,41 +307,156 @@
         .catch(error => console.error('Error:', error));
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-            const weatherForm = document.getElementById("weather-form");
-            if (weatherForm) {
-                weatherForm.addEventListener("submit", function (event) {
-                event.preventDefault();
-                const city = document.getElementById("city-select").value;
+    document.getElementById("itinerary-Name").addEventListener("input", function () {
+  const query = this.value.trim();
+  const suggestionBox = document.getElementById("suggestion-list");
+  if (!query) {
+    suggestionBox.innerHTML = "";
+    return;
+  }
 
-                fetch("/weather", {
-                    method: "POST",
-                    body: new URLSearchParams({ city: city }),
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                    let resultDiv = document.getElementById("weather-result");
-                    if (data.error) {
-                        resultDiv.innerHTML = `<p style="color: red;"> ${data.error}</p>`;
-                    } else {
-                        resultDiv.innerHTML = `
-                        🌡 ${data.temp}°C<br>
-                        ☁️ ${data.description}<br>
-                        💧 ${data.humidity}%<br>
-                        🌬 ${data.wind_speed} m/s
-                        `;
-                    }
-                    })
-                    .catch(error => {
-                    console.error("查詢錯誤:", error);
-                    document.getElementById("weather-result").innerHTML = "❌ 無法取得資料";
-                    });
-                });
-            }
-          });
+  fetch(`/cus/search_itineraries?q=${encodeURIComponent(query)}`)
+    .then(res => res.json())
+    .then(data => {
+      suggestionBox.innerHTML = "";
+      data.forEach(name => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        li.onclick = () => {
+          document.getElementById("itinerary-Name").value = name;
+          suggestionBox.innerHTML = "";
+        };
+        suggestionBox.appendChild(li);
+      });
+    });
+});
 
-      function translatePage() {
+document.addEventListener("DOMContentLoaded", function () {
+  const weatherForm = document.getElementById("weather-form");
+  if (weatherForm) {
+    weatherForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const city = document.getElementById("city-select").value;
+
+      fetch("/weather", {
+        method: "POST",
+        body: new URLSearchParams({ city: city }),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+      })
+      .then(response => response.json())
+      .then(data => {
+        let resultDiv = document.getElementById("weather-result");
+        if (data.error) {
+          resultDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;
+        } else {
+          resultDiv.innerHTML = `
+            🌡 ${data.temp}°C<br>
+            ☁️ ${data.description}<br>
+            💧 ${data.humidity}%<br>
+            🌬 ${data.wind_speed} m/s
+          `;
+        }
+      })
+      .catch(error => {
+        console.error("查詢錯誤:", error);
+        document.getElementById("weather-result").innerHTML = "❌ 無法取得資料";
+      });
+    });
+  }
+
+  document.getElementById('add-btn').addEventListener('click', function() {
+    const selected = inputEl.value.trim();
+    if (!selected) return alert('請先選擇或輸入方案名稱');
+    addItinerary(selected);
+  });
+
+  // 如果你原本的 addItinerary() 不接受參數，請改寫如下：
+  function addItinerary(name) {
+    // ... your existing logic 把 name 送到後端 or 顯示在 itinerary-list
+  }
+});
+
+// 顯示可拖曳的排序列表
+function displaySortedList(idList, idToNameMap) {
+  const listEl = document.getElementById("sorted-itinerary-list");
+  listEl.innerHTML = "";
+
+  idList.forEach(id => {
+    const li = document.createElement("li");
+    li.dataset.id = id;
+    li.textContent = idToNameMap[id] || `方案 ${id}`;
+    listEl.appendChild(li);
+  });
+
+  // 初始化 Sortable 拖曳
+  Sortable.create(listEl, {
+    animation: 150
+  });
+}
+
+function getSortedOrder() {
+  const items = document.querySelectorAll("#sorted-itinerary-list li");
+  const sortedIds = Array.from(items).map(item => parseInt(item.dataset.id));
+
+  console.log("使用者自定排序結果：", sortedIds);
+
+  // 取得最後一個景點 ID
+  const lastId = sortedIds[sortedIds.length - 1];
+  const last = itineraries.find(it => it.id === lastId);
+
+  if (!last || !last.latitude || !last.longitude) {
+    alert("無法取得最後景點的經緯度資訊！");
+    return;
+  }
+
+  const radiusInput = document.getElementById('hotel-search-radius');
+  const searchRadius = radiusInput ? parseInt(radiusInput.value) || 3000 : 3000;
+
+  const overpassQuery = `
+    [out:json][timeout:25];
+    (
+      node["tourism"="hotel"](around:${searchRadius},${last.latitude},${last.longitude});
+      way["tourism"="hotel"](around:${searchRadius},${last.latitude},${last.longitude});
+      relation["tourism"="hotel"](around:${searchRadius},${last.latitude},${last.longitude});
+    );
+    out center;
+  `;
+  const overpassUrl = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(overpassQuery);
+
+  fetch(overpassUrl)
+    .then(res => res.json())
+    .then(json => {
+      const hotels = json.elements
+        .filter(h => h.tags && h.tags.name)
+        .sort((a, b) => {
+          const rateA = parseFloat(a.tags.stars) || 0;
+          const rateB = parseFloat(b.tags.stars) || 0;
+          return rateB - rateA;
+        })
+        .slice(0, 5);
+
+      const hotelDisplay = document.getElementById('hotel-recommendations-display');
+      hotelDisplay.innerHTML = '';
+      hotels.forEach(h => {
+        const stars = h.tags.stars ? `（${h.tags.stars}星）` : '';
+        hotelDisplay.innerHTML += `<div class="hotel-item">🏨 ${h.tags.name} ${stars}</div>`;
+      });
+    })
+    .catch(err => {
+      console.error("Overpass 查詢錯誤：", err);
+    });
+}
+
+itineraryItem.querySelector('.delete-btn').addEventListener('click', () => {
+  itineraryItem.remove(); // 從畫面移除
+  const index = itineraries.findIndex(it => it.id === itineraryData.id);
+  if (index !== -1) {
+    itineraries.splice(index, 1); // 從陣列中移除
+  }
+  displaySortedItineraries(); // 重新渲染排序顯示
+});
+
+  function translatePage() {
         const targetLang = document.getElementById("language-select").value;
         const elements = document.querySelectorAll(".translatable");
 

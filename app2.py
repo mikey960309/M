@@ -1,10 +1,14 @@
-import os, json, mysql.connector, requests, time, random
+import os, json, mysql.connector, requests, time, random, psycopg2, psycopg2.extras
 from flask import Flask, render_template, redirect, url_for, session, jsonify,request
 from flask_socketio import SocketIO
+from flask_socketio import emit
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from datetime import datetime
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+
 
 app = Flask(__name__)
 app.secret_key = 'key'
@@ -15,13 +19,23 @@ UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'pic')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER  
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
+load_dotenv() 
 db_config = {
-    "host": "localhost",
-    "user": "root",
-    "password": "1qaz1qaz",
-    "database": "travel_system"
+    'host': os.getenv('DB_HOST'),
+    'database': os.getenv('DB_NAME'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'port': int(os.getenv('DB_PORT', 5432)),
+    'sslmode':  'require'
 }
+try:
+    conn = psycopg2.connect(**db_config)
+    print("✅ 成功連線到 PostgreSQL！")
+    conn.close()
+except Exception as e:
+    print("❌ 連線失敗：", e)
+conn = psycopg2.connect(**db_config)
+cursor = conn.cursor()
 
 WEATHER_API_KEY = "fb4936a1e7f8e2cd1901315a05686396"
 CLIENT_ID = "ae100890-ae89c86e-9a76-46e1"
@@ -37,8 +51,10 @@ DEEPL_URL = "https://api-free.deepl.com/v2/translate"
 @app.route('/index')
 def index():
     formatted_itineraries = [] 
+    connection = None
+    cursor = None
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
         sql = """
             SELECT i.id, i.itinerary_name, i.start_time, i.end_time, i.description, 
@@ -87,7 +103,7 @@ def index():
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
     return render_template('index2.html', itineraries=formatted_itineraries)
@@ -99,8 +115,8 @@ def search():
         return jsonify([])
 
     try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True) 
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor()
 
         sql = """
         SELECT id, itinerary_name, locations
@@ -140,10 +156,10 @@ def search():
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
-@app.route('/user', methods=['GET', 'POST'])
+@app.route('/user', methods=['GET', 'POST'], endpoint='user_page')
 def user_page():
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -152,13 +168,19 @@ def user_page():
     error_message = None
     user_comments = []
     user_itineraries = []
-    user_info = None  # ✅ 先定義
+    user_info = None
+
+    def safe_int(value, default=0):
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return default
 
     try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor()
-
-        # 先抓使用者資料，不管 GET 還是 POST 都要用到
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        
+        # 撈使用者資料
         user_sql = """
             SELECT name, username, birth_year, birth_month, birth_day, phone 
             FROM users WHERE user_id = %s
@@ -169,6 +191,7 @@ def user_page():
         if not user_info:
             return render_template('error.html', error_message="使用者資料不存在"), 404
 
+        # 更新個資
         if request.method == 'POST':
             print("收到 POST 請求")
             name = request.form['name']
@@ -177,32 +200,33 @@ def user_page():
             birth_month = request.form['birth_month']
             birth_day = request.form['birth_day']
             print("更新內容：", name, phone, birth_year, birth_month, birth_day)
+
             update_sql = """
                 UPDATE users
                 SET name = %s, phone = %s, birth_year = %s, birth_month = %s, birth_day = %s
                 WHERE user_id = %s
             """
-            values = (name, phone, int(birth_year), int(birth_month), int(birth_day), session['user_id'])
+            values = (name, phone, safe_int(birth_year), safe_int(birth_month), safe_int(birth_day), session['user_id'])
             cursor.execute(update_sql, values)
             connection.commit()
             success_message = '資料更新成功'
 
-            # 更新後重新查一次資料
+            # 更新後重新抓一次個資
             cursor.execute(user_sql, (session['user_id'],))
             user_info = cursor.fetchone()
 
-        # 撈留言
+        # 撈使用者的留言
         comments_sql = """
             SELECT uc.comment_text, uc.timestamp, u.username
             FROM user_comments uc
             JOIN users u ON uc.user_id = u.user_id
-            WHERE uc.username = %s
+            WHERE u.username = %s
             ORDER BY uc.timestamp
         """
-        cursor.execute(comments_sql, (user_info[1],))
+        cursor.execute(comments_sql, (user_info['username'],))
         user_comments = cursor.fetchall()
 
-        # 撈行程
+        # 撈自己刊登的行程
         itineraries_sql = """
             SELECT id, itinerary_name
             FROM itineraries
@@ -213,12 +237,12 @@ def user_page():
         user_itineraries = cursor.fetchall()
 
     except mysql.connector.Error as err:
-        print(f"Error: {err}")
-        error_message = '資料處理錯誤'
+        print(f"資料庫錯誤內容: {err}")
+        error_message = f"資料庫錯誤: {err}"
     finally:
         if cursor:
             cursor.close()
-        if connection.is_connected():
+        if connection:
             connection.close()
 
     return render_template('user_page.html',
@@ -228,6 +252,51 @@ def user_page():
                            user_comments=user_comments,
                            user_itineraries=user_itineraries)
 
+@app.route('/edit_user', methods=['GET', 'POST'])
+def edit_user():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor()
+
+        if request.method == 'POST':
+            name = request.form.get('name', '')
+            birth_year = request.form.get('birth_year', 0)
+            birth_month = request.form.get('birth_month', 0)
+            birth_day = request.form.get('birth_day', 0)
+            phone = request.form.get('phone', '')
+
+            update_sql = """
+                UPDATE users
+                SET name = %s, birth_year = %s, birth_month = %s, birth_day = %s, phone = %s
+                WHERE user_id = %s
+            """
+            cursor.execute(update_sql, (name, birth_year, birth_month, birth_day, phone, session['user_id']))
+            connection.commit()
+
+            return redirect(url_for('user_page'))
+
+        # GET 載入表單資料
+        user_sql = "SELECT name, username, birth_year, birth_month, birth_day, phone FROM users WHERE user_id = %s"
+        cursor.execute(user_sql, (session['user_id'],))
+        user_info = cursor.fetchone()
+
+        if not user_info:
+            return render_template('error.html', error_message="使用者資料不存在"), 404
+
+        return render_template('edit_user.html', user_info=user_info)
+
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+        return render_template('error.html', error_message='資料庫錯誤'), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
 @app.route('/user/<username>')
 def public_user_page(username):
     user_info = None
@@ -235,7 +304,7 @@ def public_user_page(username):
     user_itineraries = []
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
 
         user_sql = "SELECT name, username, birth_year, birth_month, birth_day, phone FROM users WHERE username = %s"
@@ -270,7 +339,7 @@ def public_user_page(username):
     finally:
         if cursor:
             cursor.close()
-        if connection.is_connected():
+        if connection:
             connection.close()
 
     return render_template('public_user_page.html',
@@ -285,8 +354,8 @@ def search_usernames():
         return jsonify([])
 
     try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
         sql = """
             SELECT username, name FROM users
             WHERE LOWER(username) LIKE %s OR LOWER(name) LIKE %s
@@ -297,14 +366,14 @@ def search_usernames():
         users = cursor.fetchall()
         return jsonify(users)
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"Search error: {err}")
         return jsonify([])
 
     finally:
         if cursor:
             cursor.close()
-        if connection.is_connected():
+        if connection:
             connection.close()
             
 @app.route('/', methods=['GET', 'POST'])
@@ -314,7 +383,7 @@ def login():
         password = request.form['password']
 
         try:
-            connection = mysql.connector.connect(**db_config)
+            connection = psycopg2.connect(**db_config)
             cursor = connection.cursor()
 
             sql = "SELECT user_id, password FROM users WHERE username = %s"
@@ -323,6 +392,7 @@ def login():
 
             if user and check_password_hash(user[1], password):
                 session['user_id'] = user[0]
+                session['username'] = username
                 return redirect(url_for('index'))
             else:
                 return render_template('login2.html', error_message='帳號或密碼錯誤')
@@ -334,7 +404,7 @@ def login():
         finally:
             if cursor:
                 cursor.close()
-            if connection and connection.is_connected():
+            if connection:
                 connection.close()
 
     return render_template('login2.html')
@@ -352,7 +422,7 @@ def register():
 
         
         try:
-            connection = mysql.connector.connect(**db_config)
+            connection = psycopg2.connect(**db_config)
             cursor = connection.cursor()
             
 
@@ -377,7 +447,7 @@ def register():
         finally:
             if cursor:
                 cursor.close()
-            if connection and connection.is_connected():
+            if connection:
                 connection.close()
 
         return redirect(url_for('login'))
@@ -395,7 +465,7 @@ def post():
         return redirect(url_for('login'))
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
 
 
@@ -437,7 +507,7 @@ def post():
     finally:
         if cursor:
             cursor.close()
-        if connection.is_connected():
+        if connection:
             connection.close()
 
     return render_template('post2.html', user_info=user_info)
@@ -448,7 +518,7 @@ def submit_post():
         return redirect(url_for('login'))
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
         user_id = session['user_id']
         itinerary_name = request.form['itinerary_name']
@@ -489,7 +559,7 @@ def submit_post():
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
 @app.route('/cus')
@@ -499,7 +569,7 @@ def cus():
 @app.route('/cus/AddItinerary/<string:name>')
 def cus_AddItinerary(name):
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
 
         sql = """SELECT id, itinerary_name, start_time, end_time, description, price, 
@@ -533,7 +603,7 @@ def cus_AddItinerary(name):
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
     return jsonify({'error': '行程未找到'}), 404
@@ -565,7 +635,7 @@ def cus_ScheduleItinerary():
 
     url = "https://api.openrouteservice.org/optimization"
     headers = {
-        "Authorization": "5b3ce3597851110001cf62489e3b774658314350b6f0aa5afac5b7e78ffda53643fbf995c46ecd9a",
+        "Authorization": "5b3ce3597851110001cf624898f0212545ceceda45d91a491863a69d92a38e0d3af32807f7e17168",
         "Content-Type": "application/json"
     }
 
@@ -593,14 +663,44 @@ def cus_ScheduleItinerary():
         return jsonify({'sorted_itinerary_ids': sorted_itinerary_ids})
     else:
         print("API Error:", response.text)
+        print("Status code:", response.status_code)
+        print("API Error:", response.text)
         return jsonify({'error': 'OpenRouteService API呼叫失敗'}), 500
     return render_template('cus.html')
+
+@app.route('/cus/search_itineraries')
+def search_itineraries():
+    keyword = request.args.get('q', '').strip()
+    if not keyword:
+        return jsonify([])
+
+    try:
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor()
+        sql = """
+            SELECT itinerary_name FROM itineraries 
+            WHERE itinerary_name ILIKE %s 
+            LIMIT 10
+        """
+        cursor.execute(sql, (f'%{keyword}%',))
+        results = [row[0] for row in cursor.fetchall()]
+        return jsonify(results)
+
+    except Exception as e:
+        print("Search error:", e)
+        return jsonify([])
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 @app.route('/case/<int:id>')
 def case(id):
     itinerary = None
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
 
         sql = """
@@ -647,7 +747,7 @@ def case(id):
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
 @app.route('/edit_case/<int:id>', methods=['GET', 'POST'])
@@ -656,7 +756,7 @@ def edit_case(id):
         return redirect(url_for('login'))
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
         cursor.execute("SELECT userid FROM itineraries WHERE id = %s", (id,))
         result = cursor.fetchone()
@@ -763,76 +863,78 @@ def edit_case(id):
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
 @app.route('/chat/<username>', methods=['GET', 'POST'])
 def chat(username):
-    if 'user_id' not in session:
+    if 'user_id' not in session or 'username' not in session:
         return redirect(url_for('login'))
+
     user_messages = []
     contacts = []
     user_id = session['user_id'] 
-    try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor()
+    self_username = session['username'] 
 
-        sql_get_userid = "SELECT user_id FROM users WHERE username = %s"
-        cursor.execute(sql_get_userid, (username,))
+    try:
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+
+        cursor.execute("SELECT user_id FROM users WHERE username = %s", (username,))
         result = cursor.fetchone()
 
         if result:
-            recipient_id = result[0]
+            recipient_id = result['user_id']
+            recipient_username = username
 
-            sql = """SELECT userid, receiver, message, timestamp, username
+            sql = """SELECT userid, receiver, message, timestamp, u.username
                     FROM messages
-                    JOIN users username ON userid = user_id
-                    WHERE (userid = %s AND receiver = %s) 
-                       OR (userid = %s AND receiver = %s)
+                    JOIN users u ON userid = u.user_id
+                    WHERE (userid = %s AND receiver = %s)
+                        OR (userid = %s AND receiver = %s)
                     ORDER BY timestamp"""
-            cursor.execute(sql, (user_id, recipient_id, recipient_id, user_id))
+            cursor.execute(sql, (
+                user_id, recipient_username,
+                recipient_id, self_username
+            ))
             user_messages = cursor.fetchall()
 
-            sql_contacts = """SELECT DISTINCT CASE
-                                             WHEN messages.userid = %s THEN messages.receiver
-                                             ELSE messages.userid
-                                             END AS contact_id
-                                             FROM messages
-                                             WHERE messages.userid = %s OR messages.receiver = %s"""
-            cursor.execute(sql_contacts, (session['user_id'], session['user_id'], session['user_id']))
-            contacts = [row[0] for row in cursor.fetchall() if row[0] != session['user_id']]
+            sql_contacts = """
+                SELECT DISTINCT CASE
+                    WHEN messages.userid = %s THEN messages.receiver
+                    ELSE CAST(messages.userid AS TEXT)
+                END AS contact_id
+                FROM messages
+                WHERE messages.userid = %s OR messages.receiver = %s
+            """
+            cursor.execute(sql_contacts, (user_id, user_id, self_username))
+            contacts = [row['contact_id'] for row in cursor.fetchall() if str(row['contact_id']) != self_username]
 
-            if request.method == 'POST':
-                message = request.form['message']
-                user_id = session['user_id']
-                
-                sql_insert_message = "INSERT INTO messages (userid, receiver, message, timestamp) VALUES (%s, %s, %s, %s)"
-                timestamp = datetime.now()
-                cursor.execute(sql_insert_message, (user_id, recipient_id, message, timestamp))
-                connection.commit()
-
-                socketio.emit('receive_message', {
-                    'message': message,
-                    'user_id': user_id,
-                    'recipient_id': recipient_id,
-                    'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
-                }, room=str(recipient_id)) 
         else:
             return render_template('error.html', error_message=f"使用者 '{username}' 不存在")
-    except mysql.connector.Error as err:
-        print(f"Error: {err}")
+    except psycopg2.Error as err:
+        print(f"Database Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤')
+
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
-    return render_template('chat2.html', chat_messages=user_messages, recipient_id=recipient_id, contacts=contacts, recipient_username=username)
+
+    return render_template(
+        'chat2.html',
+        chat_messages=user_messages,
+        recipient_id=recipient_id,
+        contacts=contacts,
+        recipient_username=username
+    )
+    
 
 @app.route('/chat_list')
 def chat_list():
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
         sql = "SELECT username ,name FROM users"
         cursor.execute(sql)
@@ -842,7 +944,7 @@ def chat_list():
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
     return render_template('chat_list.html', users=users)
 
@@ -850,38 +952,56 @@ def chat_list():
 def handle_send_message(data):
     message = data.get('message')
     recipient_id = data.get('recipient_id')
-    user_id = session['user_id']
+    user_id = session.get('user_id')
+    sender_username = session.get('username')
 
-    if message and recipient_id:
-        try:
-            connection = mysql.connector.connect(**db_config)
-            cursor = connection.cursor()
-            sql = "INSERT INTO messages (userid, receiver, message, timestamp) VALUES (%s, %s, %s, %s)"
-            timestamp = datetime.now()
-            cursor.execute(sql, (user_id, recipient_id, message, timestamp))
-            connection.commit()
+    if not message or not recipient_id or not user_id:
+        print("資料不完整，無法處理訊息")
+        return
 
-            socketio.emit('receive_message', {
-                'message': message,
-                'user_id': user_id,
-                'recipient_id': recipient_id,
-                'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
-            }, room=user_id) 
+    try:
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor()
 
-            socketio.emit('receive_message', {
-                'message': message,
-                'user_id': user_id,
-                'recipient_id': recipient_id,
-                'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
-            }, room=recipient_id) 
+        # 先查出對方 username，因為 receiver 欄位存的是 username 而不是 user_id
+        cursor.execute("SELECT username FROM users WHERE user_id = %s", (recipient_id,))
+        result = cursor.fetchone()
+        if not result:
+            print("找不到接收者 username")
+            return
+        recipient_username = result[0]
 
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-        finally:
-            if cursor:
-                cursor.close()
-            if connection.is_connected():
-                connection.close()
+        # 寫入訊息
+        timestamp = datetime.now()
+        sql = """
+            INSERT INTO messages (userid, receiver, message, timestamp)
+            VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(sql, (user_id, recipient_username, message, timestamp))
+        connection.commit()
+
+        # 發送訊息給雙方（房間以 username 為識別）
+        emit('receive_message', {
+            'message': message,
+            'user_id': user_id,
+            'recipient_id': recipient_id,
+            'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        }, room=recipient_username)
+
+        emit('receive_message', {
+            'message': message,
+            'user_id': user_id,
+            'recipient_id': recipient_id,
+            'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        }, room=sender_username)
+
+    except Exception as err:
+        print(f"SocketIO message insert error: {err}")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 @app.route('/add_comment/<int:itinerary_id>', methods=['POST'])
 def add_comment(itinerary_id):
@@ -904,7 +1024,7 @@ def add_comment(itinerary_id):
             return jsonify({'error': '留言內容不能為空'}), 400
 
         user_id = session['user_id']
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
         query = "INSERT INTO itinerary_comments (itinerary_id, user_id, comment_text, rating) VALUES (%s, %s, %s, %s)"
         cursor.execute(query, (itinerary_id, user_id, comment, rating))
@@ -924,8 +1044,8 @@ def get_comments(itinerary_id):
     connection = None
     cursor = None
     try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
         query = """
             SELECT u.username, ic.comment_text, ic.rating, ic.timestamp
             FROM itinerary_comments ic
@@ -957,7 +1077,7 @@ def add_user_comment(username):
     user_id = session['user_id'] 
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
 
         sql = "INSERT INTO user_comments (username, user_id, comment_text) VALUES (%s, %s, %s)"
@@ -970,22 +1090,22 @@ def add_user_comment(username):
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
 @app.route('/get_user_comments/<username>', methods=['GET'])
 def get_user_comments(username):
     try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
 
 
         sql = """
-            SELECT u.username, c.comment_text, c.timestamp
-            FROM user_comments c
-            JOIN users u ON c.user_id = u.user_id
-            WHERE c.username = %s
-            ORDER BY c.timestamp
+            SELECT uc.comment_text, uc.timestamp, u.username
+            FROM user_comments uc
+            JOIN users u ON uc.user_id = u.user_id
+            WHERE uc.username = %s
+            ORDER BY uc.timestamp DESC
         """
         cursor.execute(sql, (username,))
         comments = cursor.fetchall()
@@ -996,7 +1116,7 @@ def get_user_comments(username):
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
 def get_tdx_token():

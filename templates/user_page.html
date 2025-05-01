@@ -9,18 +9,18 @@
 <body>
     <nav>
         <a href="{{ url_for('index') }}" class="translatable">首頁</a>
-        <a href="{{ url_for('chat_list')}}" class="translatable">聊天室</a>
+        <a href="{{ url_for('chat_list') }}" class="translatable">聊天室</a>
         <a href="{{ url_for('post') }}" class="translatable">刊登</a>
         <a href="{{ url_for('cus') }}" class="translatable">規劃行程</a>
         <a href="{{ url_for('user_page') }}" class="translatable">個人頁面</a>
 
         <div class="translate-box" style="margin: 20px auto; text-align: center;">
             <select id="language-select" style="padding: 6px; border-radius: 4px;">
-              <option value="EN">English</option>
-              <option value="KO">한국인</option>
-              <option value="JA">日本語</option>
-              <option value="DE">Deutsch</option>
-              <option value="FR">Français</option>
+                <option value="EN">English</option>
+                <option value="KO">한국인</option>
+                <option value="JA">日本語</option>
+                <option value="DE">Deutsch</option>
+                <option value="FR">Français</option>
             </select>
             <button onclick="translatePage()" class="translatable" style="padding: 6px 10px; border-radius: 4px; background-color: #28a745; color: white; border: none; cursor: pointer;">
                 Translate
@@ -31,50 +31,56 @@
         <header>
             <h1 class="translatable">個人頁面</h1>
             <div class="auth-links">
-                <a href="/logout" >Logout</a>
+                <a href="/logout">Logout</a>
             </div>
         </header>
     </div>
     <main class="user-page-layout">
         <div class="user-info">
             {% if user_info %}
-            <h2 class="translatable">用戶帳號(ID): {{ user_info[1] }}</h2>
+            <h2 class="translatable">用戶帳號(ID): {{ user_info['username'] }}</h2>
             <form method="POST" action="/user">
+                {% if success_message %}
+                    <div style="color: green; margin-bottom: 10px;">{{ success_message }}</div>
+                {% endif %}
+                {% if error_message %}
+                    <div style="color: red; margin-bottom: 10px;">{{ error_message }}</div>
+                {% endif %}
                 <label for="name" class="translatable">姓名:</label>
-                <input type="text" id="name" name="name" value="{{ user_info[0] }}" required>
-    
+                <input type="text" id="name" name="name" value="{{ user_info['name'] }}" required>
+
                 <label for="birth_year" class="translatable">出生年份:</label>
-                <input type="number" id="birth_year" name="birth_year" value="{{ user_info[2] }}" required>
-    
+                <input type="number" id="birth_year" name="birth_year" value="{{ user_info['birth_year'] }}" required>
+
                 <label for="birth_month" class="translatable">出生月份:</label>
-                <input type="number" id="birth_month" name="birth_month" value="{{ user_info[3] }}" required>
-    
+                <input type="number" id="birth_month" name="birth_month" value="{{ user_info['birth_month'] }}" required>
+
                 <label for="birth_day" class="translatable">出生日期:</label>
-                <input type="number" id="birth_day" name="birth_day" value="{{ user_info[4] }}" required>
-    
+                <input type="number" id="birth_day" name="birth_day" value="{{ user_info['birth_day'] }}" required>
+
                 <label for="phone" class="translatable">行動電話:</label>
-                <input type="text" id="phone" name="phone" value="{{ user_info[5] }}" required>
-    
+                <input type="text" id="phone" name="phone" value="{{ user_info['phone'] }}" required>
+
                 <button type="submit" class="translatable">更新資料</button>
             </form>
-    
+
             <section>
                 <h2 class="translatable">我的評論</h2>
                 <ul>
-                    {% for comment in user_comments %}
-                        <li>{{ comment[0] }} - {{ comment[1] }}</li>
+                    {% if user_comments %}
+                        {% for comment in user_comments %}
+                            <li>{{ comment['comment_text'] }} - {{ comment['timestamp'] }}</li>
+                        {% endfor %}
                     {% else %}
                         <li class="translatable">目前沒有留言。</li>
-                    {% endfor %}
+                    {% endif %}
                 </ul>
             </section>
             {% else %}
             <p class="translatable">用戶資料未設定。</p>
             {% endif %}
-
-            
         </div>
-    
+
         <div class="search-user-box">
             <h3 class="translatable">搜尋使用者 ID</h3>
             <label for="search_username" class="translatable">輸入使用者帳號：</label>
@@ -90,7 +96,7 @@
                     {% if user_itineraries %}
                         {% for itinerary in user_itineraries %}
                             <li>
-                                <a href="{{ url_for('case', id=itinerary[0]) }}">{{ itinerary[1] }}</a>
+                                <a href="{{ url_for('case', id=itinerary['id']) }}">{{ itinerary['itinerary_name'] }}</a>
                             </li>
                         {% endfor %}
                     {% else %}
@@ -101,10 +107,9 @@
         </div>
     </main>
 
-</body>
-
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+// 你原本的搜尋功能與翻譯功能保持不動
+document.addEventListener("DOMContentLoaded", function () {
     const input = document.getElementById("search_username");
     const button = document.getElementById("search_button");
     const suggestionBox = document.getElementById("user-suggestions");
@@ -130,13 +135,9 @@
                     li.innerHTML = `<strong>${user.username}</strong>（${user.name}）`;
                     li.classList.add("user-suggestion-item");
                     li.style.cursor = "pointer";
-                    
-                    // ⬇️ 點擊跳轉
                     li.addEventListener("click", () => {
-                        console.log("跳轉到使用者頁面:", user.username); // ✅ 測試印出
                         window.location.href = `/user/${user.username}`;
                     });
-
                     suggestionBox.appendChild(li);
                 });
             })
@@ -147,55 +148,51 @@
     });
 });
 
-    
-            function translatePage() {
-        const targetLang = document.getElementById("language-select").value;
-        const elements = document.querySelectorAll(".translatable");
+function translatePage() {
+    const targetLang = document.getElementById("language-select").value;
+    const elements = document.querySelectorAll(".translatable");
+    const texts = [];
+    const map = [];
 
-        const texts = [];
-        const map = [];
+    elements.forEach(el => {
+        if (el.tagName === "INPUT" && el.placeholder) {
+            texts.push(el.placeholder);
+            map.push({ el, type: "placeholder" });
+        } else if (el.children.length === 0) {
+            texts.push(el.textContent.trim());
+            map.push({ el, type: "text" });
+        }
+    });
 
-        elements.forEach(el => {
-            if (el.tagName === "INPUT" && el.placeholder) {
-                texts.push(el.placeholder);
-                map.push({ el, type: "placeholder" });
-            } else if (el.children.length === 0) {
-                texts.push(el.textContent.trim());
-                map.push({ el, type: "text" });
-            }
-        });
-
-        fetch("/translate", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                text: texts.join("\n___SPLIT___\n"),
-                target_lang: targetLang
-            })
+    fetch("/translate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            text: texts.join("\n___SPLIT___\n"),
+            target_lang: targetLang
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert("翻譯錯誤：" + data.error);
-            } else {
-                const translated = data.translation.split("\n___SPLIT___\n");
-                map.forEach((item, i) => {
-                    if (translated[i]) {
-                        if (item.type === "placeholder") {
-                            item.el.placeholder = translated[i];
-                        } else {
-                            item.el.textContent = translated[i];
-                        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert("翻譯錯誤：" + data.error);
+        } else {
+            const translated = data.translation.split("\n___SPLIT___\n");
+            map.forEach((item, i) => {
+                if (translated[i]) {
+                    if (item.type === "placeholder") {
+                        item.el.placeholder = translated[i];
+                    } else {
+                        item.el.textContent = translated[i];
                     }
-                });
-
-                // 確保天氣查詢表單還能用
-                bindWeatherForm();
-            }
-        })
-        .catch(error => console.error("翻譯錯誤:", error));
-    }
-    </script>
+                }
+            });
+        }
+    })
+    .catch(error => console.error("翻譯錯誤:", error));
+}
+</script>
+</body>
 </html>
