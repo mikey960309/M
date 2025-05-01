@@ -1,4 +1,4 @@
-import os, json, mysql.connector, requests, time, random, psycopg2, psycopg2.extras
+import os, json, requests, time, random, psycopg2, psycopg2.extras
 from flask import Flask, render_template, redirect, url_for, session, jsonify,request
 from flask_socketio import SocketIO
 from flask_socketio import emit
@@ -98,7 +98,7 @@ def index():
                 'longitude': longitude
             })
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Database Error: {err}")
     finally:
         if cursor:
@@ -113,7 +113,8 @@ def search():
     query = request.args.get('q', '').lower()
     if not query:
         return jsonify([])
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
@@ -149,7 +150,7 @@ def search():
 
         return jsonify(results)
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Database Error: {err}")
         return jsonify([])
 
@@ -169,6 +170,8 @@ def user_page():
     user_comments = []
     user_itineraries = []
     user_info = None
+    connection = None
+    cursor = None
 
     def safe_int(value, default=0):
         try:
@@ -236,7 +239,7 @@ def user_page():
         cursor.execute(itineraries_sql, (session['user_id'],))
         user_itineraries = cursor.fetchall()
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"資料庫錯誤內容: {err}")
         error_message = f"資料庫錯誤: {err}"
     finally:
@@ -256,7 +259,8 @@ def user_page():
 def edit_user():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
@@ -288,7 +292,7 @@ def edit_user():
 
         return render_template('edit_user.html', user_info=user_info)
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Database Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤'), 500
     finally:
@@ -302,7 +306,8 @@ def public_user_page(username):
     user_info = None
     user_comments = []
     user_itineraries = []
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
@@ -333,7 +338,7 @@ def public_user_page(username):
         cursor.execute(itineraries_sql, (username,))
         user_itineraries = cursor.fetchall()
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤'), 500
     finally:
@@ -352,7 +357,8 @@ def search_usernames():
     keyword = request.args.get('q', '').strip().lower()
     if not keyword:
         return jsonify([])
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor(cursor_factory=RealDictCursor)
@@ -381,8 +387,10 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
+        connection = None
+        cursor = None
         try:
+            
             connection = psycopg2.connect(**db_config)
             cursor = connection.cursor()
 
@@ -397,7 +405,7 @@ def login():
             else:
                 return render_template('login2.html', error_message='帳號或密碼錯誤')
         
-        except mysql.connector.Error as err:
+        except psycopg2.connect.Error as err:
             print(f"Error: {err}")
             return render_template('login2.html', error_message='資料庫錯誤，請稍後再試')
         
@@ -419,7 +427,8 @@ def register():
         birth_month = request.form['birth_month']
         birth_day = request.form['birth_day']
         phone = request.form['phone']
-
+        connection = None
+        cursor = None
         
         try:
             connection = psycopg2.connect(**db_config)
@@ -440,7 +449,7 @@ def register():
             values = (name, username, generate_password_hash(password), int(birth_year), int(birth_month), int(birth_day), phone)
             cursor.execute(sql, values)
             connection.commit()
-        except mysql.connector.Error as err:
+        except psycopg2.connect.Error as err:
             return render_template('register2.html', error_message=f'Database error: {err}')
         except Exception as e:
             return render_template('register2.html', error_message=f'Registration failed: {e}')
@@ -463,7 +472,8 @@ def logout():
 def post():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
@@ -500,7 +510,7 @@ def post():
 
             return redirect(url_for('index')) 
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Database Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤，請稍後再試'), 500
 
@@ -516,7 +526,8 @@ def post():
 def submit_post():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
@@ -552,7 +563,7 @@ def submit_post():
         connection.commit()
         return redirect(url_for('index'))
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Database Error: {err}")
         return render_template('error.html', error_message="刊登失敗，請稍後再試"), 500
 
@@ -571,7 +582,8 @@ def cus_AddItinerary(name):
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
-
+        connection = None
+        cursor = None
         sql = """SELECT id, itinerary_name, start_time, end_time, description, price, 
                         locations, latitude, longitude, photos, userid 
                  FROM itineraries WHERE itinerary_name = %s"""
@@ -596,7 +608,7 @@ def cus_AddItinerary(name):
             }
             return jsonify(itinerary_data)
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Error: {err}")
         return jsonify({'error': '資料庫錯誤'}), 500
 
@@ -673,7 +685,8 @@ def search_itineraries():
     keyword = request.args.get('q', '').strip()
     if not keyword:
         return jsonify([])
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
@@ -702,7 +715,8 @@ def case(id):
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
-
+        connection = None
+        cursor = None
         sql = """
             SELECT i.id, i.itinerary_name, i.start_time, i.end_time, i.description, 
                    i.price, i.locations, i.photos, i.userid, u.username, 
@@ -740,7 +754,7 @@ def case(id):
         else:
             return render_template('error.html', error_message="未找到該行程"), 404
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Database Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤，請稍後再試'), 500
 
@@ -754,7 +768,8 @@ def case(id):
 def edit_case(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
@@ -832,7 +847,7 @@ def edit_case(id):
 
             except ValueError:
                 return render_template('error.html', error_message='經度或緯度無法轉換為數字'), 400
-            except mysql.connector.Error as err:
+            except psycopg2.connect.Error as err:
                 print(f"Database Error: {err}")
                 return render_template('error.html', error_message='更新行程時出錯'), 500
 
@@ -857,7 +872,7 @@ def edit_case(id):
 
         return render_template('edit.html', itinerary=itinerary)
 
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Error: {err}")
         return render_template('error.html', error_message='資料庫錯誤'), 500
     finally:
@@ -875,7 +890,8 @@ def chat(username):
     contacts = []
     user_id = session['user_id'] 
     self_username = session['username'] 
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor(cursor_factory=RealDictCursor)
@@ -939,7 +955,9 @@ def chat_list():
         sql = "SELECT username ,name FROM users"
         cursor.execute(sql)
         users = cursor.fetchall()
-    except mysql.connector.Error as err:
+        connection = None
+        cursor = None
+    except psycopg2.connect.Error as err:
         return render_template('error.html', error_message=f"資料庫錯誤: {err}")
     finally:
         if cursor:
@@ -954,7 +972,8 @@ def handle_send_message(data):
     recipient_id = data.get('recipient_id')
     user_id = session.get('user_id')
     sender_username = session.get('username')
-
+    connection = None
+    cursor = None
     if not message or not recipient_id or not user_id:
         print("資料不完整，無法處理訊息")
         return
@@ -1030,7 +1049,7 @@ def add_comment(itinerary_id):
         cursor.execute(query, (itinerary_id, user_id, comment, rating))
         connection.commit()
         return jsonify({'message': '留言成功'})
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Error adding comment: {err}")
         return jsonify({'error': '資料庫錯誤'}), 500
     finally:
@@ -1075,7 +1094,8 @@ def add_user_comment(username):
 
     comment = request.json.get('comment')
     user_id = session['user_id'] 
-
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
@@ -1084,7 +1104,7 @@ def add_user_comment(username):
         cursor.execute(sql, (username, user_id, comment))
         connection.commit()
         return jsonify({'message': '留言成功'})
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Error adding comment: {err}")
         return jsonify({'error': '資料庫錯誤'}), 500
     finally:
@@ -1098,7 +1118,8 @@ def get_user_comments(username):
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor(cursor_factory=RealDictCursor)
-
+        connection = None
+        cursor = None
 
         sql = """
             SELECT uc.comment_text, uc.timestamp, u.username
@@ -1110,7 +1131,7 @@ def get_user_comments(username):
         cursor.execute(sql, (username,))
         comments = cursor.fetchall()
         return jsonify(comments)
-    except mysql.connector.Error as err:
+    except psycopg2.connect.Error as err:
         print(f"Error fetching comments: {err}")
         return jsonify({'error': '資料庫錯誤'}), 500
     finally:
