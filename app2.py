@@ -670,7 +670,8 @@ def cus_ScheduleItinerary():
             url,
             json=body,
             headers=headers,
-            timeout=15
+            timeout=15,
+            verify=False
         )
         response.raise_for_status()
     except requests.RequestException as e:
