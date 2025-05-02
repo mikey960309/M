@@ -70,7 +70,10 @@
         <div id="itinerary-input" class="card">
           <h2>輸入方案名稱</h2>
           <div class="input-group">
-            <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" autocomplete="off" />
+            <div class="suggestion-wrapper" style="flex: 1; position: relative;">
+              <input type="text" id="itinerary-Name" placeholder="請輸入方案名稱" autocomplete="off" oninput="showSuggestions()" />
+              <ul id="suggestion-list" class="suggestion-box"></ul>
+            </div>
             <button onclick="addItinerary()">新增</button>
           </div>
           <div id="itinerary-list"></div>
