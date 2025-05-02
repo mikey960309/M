@@ -409,7 +409,8 @@ function getSortedOrder() {
     alert("無法取得最後景點的經緯度資訊！");
     return;
   }
-
+  itineraries.push(itineraryData);
+  console.log("最後排序景點：", last);
   const radiusInput = document.getElementById('hotel-search-radius');
   const searchRadius = radiusInput ? parseInt(radiusInput.value) || 3000 : 3000;
 
