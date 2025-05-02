@@ -597,7 +597,7 @@ def cus_AddItinerary(name):
                 'desc': desc,
                 'price': price,
                 'locations': [location.strip() for location in locations_list],
-                'photos': json.loads(photos) if photos else [],
+                'photos': json.loads(photos) if photos not in [None, ''] else [],
                 'userid': userid,
                 'latitude': latitude,
                 'longitude': longitude
