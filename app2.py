@@ -572,14 +572,17 @@ def cus():
 
 @app.route('/cus/AddItinerary/<string:name>')
 def cus_AddItinerary(name):
+    connection = None
+    cursor = None
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
-        connection = None
-        cursor = None
-        sql = """SELECT id, itinerary_name, start_time, end_time, description, price, 
-                        locations, latitude, longitude, photos, userid 
-                 FROM itineraries WHERE itinerary_name = %s"""
+
+        sql = """
+            SELECT id, itinerary_name, start_time, end_time, description, price, 
+                   locations, latitude, longitude, photos, userid 
+            FROM itineraries WHERE itinerary_name = %s
+        """
         cursor.execute(sql, (name,))
         itinerary = cursor.fetchone()
 
@@ -600,8 +603,10 @@ def cus_AddItinerary(name):
                 'longitude': longitude
             }
             return jsonify(itinerary_data)
+        else:
+            return jsonify({'error': '行程未找到'}), 404
 
-    except psycopg2.connect.Error as err:
+    except psycopg2.Error as err:
         print(f"Error: {err}")
         return jsonify({'error': '資料庫錯誤'}), 500
 
@@ -610,8 +615,6 @@ def cus_AddItinerary(name):
             cursor.close()
         if connection:
             connection.close()
-
-    return jsonify({'error': '行程未找到'}), 404
 
 @app.route('/cus/ScheduleItinerary', methods=['POST'])
 def cus_ScheduleItinerary():
@@ -938,7 +941,6 @@ def chat(username):
         contacts=contacts,
         recipient_username=username
     )
-    
 
 @app.route('/chat_list')
 def chat_list():
