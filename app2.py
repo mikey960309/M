@@ -660,21 +660,19 @@ def cus_ScheduleItinerary():
         }]
     }
 
-    print("Request body:", json.dumps(body, indent=2))  # ✅ 檢查印出應為 [lng, lat]
+    print("Request body:", json.dumps(body, indent=2)) 
 
-    response = requests.post(url, json=body, headers=headers)
+    try:
+        response = requests.post(url, json=body, headers=headers, timeout=15)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print("API 呼叫錯誤：", e)
+        return jsonify({'error': 'OpenRouteService API 呼叫失敗'}), 500
 
-    if response.status_code == 200:
-        result = response.json()
-        steps = result["routes"][0]["steps"]
-        sorted_itinerary_ids = [id_mapping[step["job"] - 1] for step in steps if step.get("job")]
-        return jsonify({'sorted_itinerary_ids': sorted_itinerary_ids})
-    else:
-        print("API Error:", response.text)
-        print("Status code:", response.status_code)
-        print("API Error:", response.text)
-        return jsonify({'error': 'OpenRouteService API呼叫失敗'}), 500
-    return render_template('cus.html')
+    result = response.json()
+    steps = result["routes"][0]["steps"]
+    sorted_itinerary_ids = [id_mapping[step["job"] - 1] for step in steps if step.get("job")]
+    return jsonify({'sorted_itinerary_ids': sorted_itinerary_ids})
 
 @app.route('/cus/search_itineraries')
 def search_itineraries():
