@@ -1,4 +1,4 @@
-import os, json, requests, time, random, psycopg2, psycopg2.extras
+import os, json, requests, time, random, psycopg2, urllib3,decimal  
 from flask import Flask, render_template, redirect, url_for, session, jsonify,request
 from flask_socketio import SocketIO
 from flask_socketio import emit
@@ -8,6 +8,7 @@ from flask_cors import CORS
 from datetime import datetime
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
+from decimal import Decimal
 
 
 app = Flask(__name__)
@@ -28,7 +29,7 @@ db_config = {
     'port': int(os.getenv('DB_PORT', 5432)),
     'sslmode':  'require'
 }
-
+ORS_API_KEY = os.getenv("ORS_API_KEY")
 WEATHER_API_KEY = "fb4936a1e7f8e2cd1901315a05686396"
 CLIENT_ID = "ae100890-ae89c86e-9a76-46e1"
 CLIENT_SECRET = "47c01c48-19ce-4d60-94e8-c72ca8eed731"
@@ -616,63 +617,74 @@ def cus_AddItinerary(name):
         if connection:
             connection.close()
 
-@app.route('/cus/ScheduleItinerary', methods=['POST'])
+@app.route("/cus/ScheduleItinerary", methods=["POST"])
 def cus_ScheduleItinerary():
-    data = request.get_json()
-    start_latitude = data.get('start_latitude')
-    start_longitude = data.get('start_longitude')
-    itineraries = data.get('itineraries', [])
+    data = request.get_json(silent=True) or {}
+    start_lat = data.get("start_latitude")
+    start_lng = data.get("start_longitude")
+    itineraries = data.get("itineraries", [])
 
-    if start_latitude is None or start_longitude is None or not itineraries:
-        return jsonify({'error': '缺少必要的資料：出發點經緯度或方案資料'}), 400
+    if start_lat is None or start_lng is None or not itineraries:
+        return jsonify({"error": "缺少必要的資料：出發點經緯度或方案資料"}), 400
 
-    # ✅ 修正：出發點為 [經度, 緯度]
-    coords = [[float(start_longitude), float(start_latitude)]]  # ✅ start: 經度, 緯度
-    id_mapping = []
+    try:
+        # ORS 座標格式為 [lng, lat]
+        coords = [[float(Decimal(start_lng)), float(Decimal(start_lat))]]
+    except (decimal.InvalidOperation, ValueError):
+        return jsonify({"error": "出發點經緯度格式錯誤"}), 400
 
+    id_mapping = []          # 與 jobs 一一對應
     for it in itineraries:
-        lat = it.get("latitude")
-        lng = it.get("longitude")
-        if lat is None or lng is None:
-            continue
-        coords.append([float(lng), float(lat)])  # ✅ 經度, 緯度
-        id_mapping.append(it.get("id"))
+        lat, lng = it.get("latitude"), it.get("longitude")
+        try:
+            if lat is None or lng is None:
+                continue
+            coords.append([float(Decimal(lng)), float(Decimal(lat))])
+            id_mapping.append(it.get("id"))
+        except (decimal.InvalidOperation, ValueError):
+            continue        # 跳過格式錯誤
 
     if len(coords) <= 1:
-        return jsonify({'error': '沒有有效的行程經緯度資料'}), 400
-
-    url = "https://api.openrouteservice.org/optimization"
-    headers = {
-        "Authorization": "5b3ce3597851110001cf624898f0212545ceceda45d91a491863a69d92a38e0d3af32807f7e17168",
-        "Content-Type": "application/json"
-    }
+        return jsonify({"error": "沒有有效的行程經緯度資料"}), 400
 
     body = {
         "jobs": [
-            {"id": idx + 1, "location": coord}
-            for idx, coord in enumerate(coords[1:])
+            {"id": idx + 1, "location": loc}
+            for idx, loc in enumerate(coords[1:])
         ],
         "vehicles": [{
             "id": 0,
             "profile": "driving-car",
-            "start": coords[0],  # ✅ 出發點 [lng, lat]
+            "start": coords[0],
             "end": coords[0]
         }]
     }
 
-    print("Request body:", json.dumps(body, indent=2)) 
+    print("ORS Request body:\n", json.dumps(body, indent=2, ensure_ascii=False))
+
+    url = "https://api.openrouteservice.org/optimization"
+    headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
 
     try:
-        response = requests.post(url, json=body, headers=headers, timeout=15)
+        response = requests.post(
+            url,
+            json=body,
+            headers=headers,
+            timeout=15
+        )
         response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        print("API 呼叫錯誤：", e)
-        return jsonify({'error': 'OpenRouteService API 呼叫失敗'}), 500
+    except requests.RequestException as e:
+        print("OpenRouteService API 錯誤：", e)
+        return jsonify({"error": "OpenRouteService API 呼叫失敗"}), 502
 
     result = response.json()
-    steps = result["routes"][0]["steps"]
-    sorted_itinerary_ids = [id_mapping[step["job"] - 1] for step in steps if step.get("job")]
-    return jsonify({'sorted_itinerary_ids': sorted_itinerary_ids})
+    steps = result.get("routes", [{}])[0].get("steps", [])
+    sorted_ids = [id_mapping[st["job"] - 1] for st in steps if st.get("job")]
+
+    return jsonify({
+        "sorted_itinerary_ids": sorted_ids,
+        "raw_steps": steps 
+    })
 
 @app.route('/cus/search_itineraries')
 def search_itineraries():
