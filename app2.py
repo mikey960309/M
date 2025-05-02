@@ -10,6 +10,10 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from decimal import Decimal
 
+from requests.adapters import HTTPAdapter
+from urllib3.poolmanager import PoolManager
+import ssl
+
 
 app = Flask(__name__)
 app.secret_key = 'key'
@@ -617,6 +621,14 @@ def cus_AddItinerary(name):
         if connection:
             connection.close()
 
+
+class TLSAdapter(HTTPAdapter):
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = ssl.create_default_context()
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        kwargs['ssl_context'] = ctx
+        return super().init_poolmanager(*args, **kwargs)
+
 @app.route("/cus/ScheduleItinerary", methods=["POST"])
 def cus_ScheduleItinerary():
     data = request.get_json(silent=True) or {}
@@ -628,12 +640,11 @@ def cus_ScheduleItinerary():
         return jsonify({"error": "缺少必要的資料：出發點經緯度或方案資料"}), 400
 
     try:
-        # ORS 座標格式為 [lng, lat]
         coords = [[float(Decimal(start_lng)), float(Decimal(start_lat))]]
     except (decimal.InvalidOperation, ValueError):
         return jsonify({"error": "出發點經緯度格式錯誤"}), 400
 
-    id_mapping = []          # 與 jobs 一一對應
+    id_mapping = []
     for it in itineraries:
         lat, lng = it.get("latitude"), it.get("longitude")
         try:
@@ -642,7 +653,7 @@ def cus_ScheduleItinerary():
             coords.append([float(Decimal(lng)), float(Decimal(lat))])
             id_mapping.append(it.get("id"))
         except (decimal.InvalidOperation, ValueError):
-            continue        # 跳過格式錯誤
+            continue
 
     if len(coords) <= 1:
         return jsonify({"error": "沒有有效的行程經緯度資料"}), 400
@@ -666,12 +677,14 @@ def cus_ScheduleItinerary():
     headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
 
     try:
-        response = requests.post(
+        session = requests.Session()
+        session.mount("https://", TLSAdapter())
+
+        response = session.post(
             url,
             json=body,
             headers=headers,
-            timeout=15,
-            verify=False
+            timeout=15
         )
         response.raise_for_status()
     except requests.RequestException as e:
