@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 import os, json, requests, time, random, psycopg2, urllib3,decimal  
 from flask import Flask, render_template, redirect, url_for, session, jsonify,request
 from flask_socketio import SocketIO
@@ -625,7 +627,7 @@ def cus_AddItinerary(name):
 class TLSAdapter(HTTPAdapter):
     def init_poolmanager(self, *args, **kwargs):
         ctx = ssl.create_default_context()
-        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        #ctx.minimum_version = ssl.TLSVersion.TLSv1_2
         kwargs['ssl_context'] = ctx
         return super().init_poolmanager(*args, **kwargs)
 
