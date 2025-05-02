@@ -123,6 +123,7 @@
             <input list="stops" id="end-stop" placeholder="終點站" class="translatable">
             <button onclick="fetchBusSuggestions()" class="translatable">查詢</button>
           </div>
+          <ul id="suggestion-list" class="autocomplete-suggestions"></ul>
           <p id="bus-error" style="color:red;"></p>
           <div id="bus-suggestion"></div>
         </div>
@@ -447,14 +448,6 @@ function getSortedOrder() {
     });
 }
 
-itineraryItem.querySelector('.delete-btn').addEventListener('click', () => {
-  itineraryItem.remove(); // 從畫面移除
-  const index = itineraries.findIndex(it => it.id === itineraryData.id);
-  if (index !== -1) {
-    itineraries.splice(index, 1); // 從陣列中移除
-  }
-  displaySortedItineraries(); // 重新渲染排序顯示
-});
 
   function translatePage() {
         const targetLang = document.getElementById("language-select").value;
@@ -603,7 +596,9 @@ itineraryItem.querySelector('.delete-btn').addEventListener('click', () => {
       })
       .then(data => {
         let resultDiv = document.getElementById("bus-suggestion");
-        resultDiv.innerHTML = "";
+        if (resultDiv) {
+          resultDiv.innerHTML = "❌ 無法取得資料";
+        }
 
         if (data.error) {
           resultDiv.innerHTML = `<p>❌ ${data.error}</p>`;
