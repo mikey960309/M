@@ -1358,5 +1358,5 @@ def translate_text_route():
     final_translation = "\n___SPLIT___\n".join(translations)
     return jsonify({"translation": final_translation})
 
-if __name__ == '__main__':
-    socketio.run(app, debug=True) 
+#if __name__ == '__main__':
+ #   socketio.run(app, debug=True) 
