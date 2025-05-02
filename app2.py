@@ -376,11 +376,12 @@ def search_usernames():
             
 @app.route('/', methods=['GET', 'POST'])
 def login():
+    connection = None
+    cursor = None
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        connection = None
-        cursor = None
+        
         try:
             
             connection = psycopg2.connect(**db_config)
