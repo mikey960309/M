@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>查詢附近站名</title>
+</head>
+<body>
+  <h2>查詢附近站點</h2>
+  <form method="POST" action="/get_stations">
+    <label>緯度 (Lat):</label>
+    <input type="text" name="lat" value="25.1675" required><br>
+    <label>經度 (Lon):</label>
+    <input type="text" name="lon" value="121.445" required><br>
+    <label>搜尋半徑（公尺）:</label>
+    <input type="number" name="radius" value="500"><br><br>
+    <button type="submit">查詢</button>
+  </form>
+
+  {% if stations %}
+    <h3>附近公車站牌：</h3>
+    <ul>
+      {% for station in stations %}
+        <li>{{ station.name }}（地址：{{ station.addr }}）</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if metro_stations %}
+  <h3>附近捷運 / 輕軌站：</h3>
+  <ul>
+    {% for station in metro_stations %}
+      <li>{{ station.name }}（營運單位：{{ station.operator }}{% if "light" in station.name.lower() or "輕軌" in station.name %}，輕軌{% endif %}）</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+</body>
+</html>

@@ -130,6 +130,36 @@
           <p id="bus-error" style="color:red;"></p>
           <div id="bus-suggestion"></div>
         </div>
+
+        <div class="bus-card">
+          <h3 class="translatable">📡 查詢附近的站牌</h3>
+          <form method="POST" action="/get_stations">
+            <div class="input-group">
+              <input type="text" name="lat" placeholder="緯度（如：25.1675）" value="25.1675" required class="translatable">
+              <input type="text" name="lon" placeholder="經度（如：121.445）" value="121.445" required class="translatable">
+              <input type="number" name="radius" placeholder="搜尋半徑（公尺）" value="500" class="translatable">
+              <button type="submit" class="translatable">查詢</button>
+            </div>
+          </form>
+        
+          {% if stations %}
+            <h4 class="translatable">🚌 附近公車站牌：</h4>
+            <ul>
+              {% for station in stations %}
+                <li>{{ station.name }}（地址：{{ station.addr }}）</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        
+          {% if metro_stations %}
+            <h4 class="translatable">🚇 附近捷運 / 輕軌站：</h4>
+            <ul>
+              {% for station in metro_stations %}
+                <li>{{ station.name }}（營運單位：{{ station.operator }}{% if "light" in station.name.lower() or "輕軌" in station.name %}，輕軌{% endif %}）</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
       </div>
     </div>
   </main>
