@@ -135,8 +135,8 @@
           <h3 class="translatable">📡 查詢附近的站牌</h3>
           <form method="POST" action="/get_stations">
             <div class="input-group">
-              <input type="text" name="lat" placeholder="緯度（如：25.1675）" value="25.1675" required class="translatable">
-              <input type="text" name="lon" placeholder="經度（如：121.445）" value="121.445" required class="translatable">
+              <input type="text" name="lat" placeholder="緯度（如：25.1675）" required class="translatable">
+              <input type="text" name="lon" placeholder="經度（如：121.445）" required class="translatable">
               <input type="number" name="radius" placeholder="搜尋半徑（公尺）" value="500" class="translatable">
               <button type="submit" class="translatable">查詢</button>
             </div>
@@ -166,23 +166,34 @@
 
   <script>
     const map = L.map('map').setView([25.033964, 121.564472], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
 
-    let marker;
-    map.on('click', function (e) {
-      const lat = e.latlng.lat.toFixed(6);
-      const lng = e.latlng.lng.toFixed(6);
-      document.getElementById('start-latitude').value = lat;
-      document.getElementById('start-longitude').value = lng;
+let marker;
+map.on('click', function (e) {
+  const lat = e.latlng.lat.toFixed(6);
+  const lng = e.latlng.lng.toFixed(6);
 
-      if (marker) {
-        marker.setLatLng(e.latlng);
-      } else {
-        marker = L.marker(e.latlng).addTo(map);
-      }
-    });
+  // ➤ 設定規劃行程出發點欄位
+  document.getElementById('start-latitude').value = lat;
+  document.getElementById('start-longitude').value = lng;
+
+  // ➤ 同步設定「查詢附近站牌」欄位
+  const nearbyLatInput = document.getElementById('nearby-lat');
+  const nearbyLonInput = document.getElementById('nearby-lon');
+  if (nearbyLatInput && nearbyLonInput) {
+    nearbyLatInput.value = lat;
+    nearbyLonInput.value = lng;
+  }
+
+  // ➤ 更新地圖上的標記
+  if (marker) {
+    marker.setLatLng(e.latlng);
+  } else {
+    marker = L.marker(e.latlng).addTo(map);
+  }
+});
 
     const itineraries = [];
 
