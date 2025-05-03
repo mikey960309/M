@@ -167,39 +167,63 @@
 
   <script>
     const map = L.map('map').setView([25.033964, 121.564472], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
 
-    let marker;
+let marker;
 
-    map.on('click', function (e) {
-      const lat = e.latlng.lat.toFixed(6);
-      const lng = e.latlng.lng.toFixed(6);
+map.on('click', function (e) {
+  const lat = e.latlng.lat.toFixed(6);
+  const lng = e.latlng.lng.toFixed(6);
 
-      // ✅ 設定「規劃行程」出發點欄位
-      const startLat = document.getElementById('start-latitude');
-      const startLng = document.getElementById('start-longitude');
-      if (startLat && startLng) {
-        startLat.value = lat;
-        startLng.value = lng;
-      }
+  // 規劃行程出發點欄位
+  const startLat = document.getElementById('start-latitude');
+  const startLng = document.getElementById('start-longitude');
+  if (startLat && startLng) {
+    startLat.value = lat;
+    startLng.value = lng;
+  }
 
-      // ✅ 同步設定「查詢附近站牌」欄位
-      const nearbyLat = document.getElementById('nearby-lat');
-      const nearbyLng = document.getElementById('nearby-lon');
-      if (nearbyLat && nearbyLng) {
-        nearbyLat.value = lat;
-        nearbyLng.value = lng;
-      }
+  // 同步查詢附近站牌欄位
+  const nearbyLat = document.getElementById('nearby-lat');
+  const nearbyLng = document.getElementById('nearby-lon');
+  if (nearbyLat && nearbyLng) {
+    nearbyLat.value = lat;
+    nearbyLng.value = lng;
+  }
 
-      // ✅ 更新主地圖上的標記
-      if (marker) {
-        marker.setLatLng(e.latlng);
-      } else {
-        marker = L.marker(e.latlng).addTo(map);
-      }
-    });
+  // 主地圖標記
+  if (marker) {
+    marker.setLatLng(e.latlng);
+  } else {
+    marker = L.marker(e.latlng).addTo(map);
+  }
+});
+
+// ✅ 初始化查詢附近站牌的小地圖
+const nearbyMap = L.map('nearby-map').setView([25.033964, 121.564472], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap'
+}).addTo(nearbyMap);
+
+let nearbyMarker;
+
+nearbyMap.on('click', function (e) {
+  const lat = e.latlng.lat.toFixed(6);
+  const lng = e.latlng.lng.toFixed(6);
+
+  // 設定查詢附近站牌欄位
+  document.getElementById('nearby-lat').value = lat;
+  document.getElementById('nearby-lon').value = lng;
+
+  // 小地圖標記
+  if (nearbyMarker) {
+    nearbyMarker.setLatLng(e.latlng);
+  } else {
+    nearbyMarker = L.marker(e.latlng).addTo(nearbyMap);
+  }
+});
 
     const itineraries = [];
 
