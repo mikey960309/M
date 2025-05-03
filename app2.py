@@ -36,15 +36,15 @@ db_config = {
     'sslmode':  'require'
 }
 ORS_API_KEY = os.getenv("ORS_API_KEY")
-WEATHER_API_KEY = "fb4936a1e7f8e2cd1901315a05686396"
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 CLIENT_ID = "ae100890-ae89c86e-9a76-46e1"
-CLIENT_SECRET = "47c01c48-19ce-4d60-94e8-c72ca8eed731"
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TDX_BASE_URL = "https://tdx.transportdata.tw/api/basic/v2/Bus"
 
 CITY_NAME = "NewTaipei"
 DISTRICT_NAME = "淡水區"
 
-DEEPL_API_KEY = 'b6b7322b-8b6b-4918-9880-0033f4202dfa:fx'
+DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 DEEPL_URL = "https://api-free.deepl.com/v2/translate"
 
 @app.route('/index')
@@ -688,6 +688,7 @@ def cus_ScheduleItinerary():
             headers=headers,
             timeout=15
         )
+        print("🔑 ORS_API_KEY:", ORS_API_KEY)
         response.raise_for_status()
     except requests.RequestException as e:
         print("OpenRouteService API 錯誤：", e)
