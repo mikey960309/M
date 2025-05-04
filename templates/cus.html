@@ -156,7 +156,7 @@
             <h4 class="translatable">🚇 附近捷運 / 輕軌站：</h4>
             <ul>
               {% for station in metro_stations %}
-                <li>{{ station.name }}（營運單位：{{ station.operator }}{% if "light" in station.name.lower() or "輕軌" in station.name %}，輕軌{% endif %}）</li>
+                <li>{{ station.name }}{% if "light" in station.name.lower() or "輕軌" in station.name %}，輕軌{% endif %}）</li>
               {% endfor %}
             </ul>
           {% endif %}

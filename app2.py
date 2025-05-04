@@ -1,6 +1,6 @@
 import eventlet
 eventlet.monkey_patch()
-import os, json, requests, time, random, psycopg2, urllib3,decimal  
+import os, json, requests, time, random, psycopg2,decimal  
 from flask import Flask, render_template, redirect, url_for, session, jsonify,request
 from flask_socketio import SocketIO
 from flask_socketio import emit
@@ -11,10 +11,9 @@ from datetime import datetime
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from decimal import Decimal
-
 from requests.adapters import HTTPAdapter
-from urllib3.poolmanager import PoolManager
 import ssl
+from urllib.parse import urlparse
 
 
 app = Flask(__name__)
@@ -27,13 +26,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 load_dotenv() 
+url = urlparse(os.getenv("DATABASE_URL"))
 db_config = {
-    'host': os.getenv('DB_HOST'),
-    'database': os.getenv('DB_NAME'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
-    'port': int(os.getenv('DB_PORT', 5432)),
-    'sslmode':  'require'
+    'host': url.hostname,
+    'database': url.path[1:],  # 去掉開頭的 "/"
+    'user': url.username,
+    'password': url.password,
+    'port': url.port,
+    'sslmode': 'require'
 }
 ORS_API_KEY = os.getenv("ORS_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
@@ -1434,5 +1434,5 @@ def translate_text_route():
     final_translation = "\n___SPLIT___\n".join(translations)
     return jsonify({"translation": final_translation})
 
-#if __name__ == '__main__':
- #   socketio.run(app, debug=True) 
+if __name__ == '__main__':
+   socketio.run(app, debug=True) 
