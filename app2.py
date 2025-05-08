@@ -11,6 +11,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from decimal import Decimal
 from requests.adapters import HTTPAdapter
+from urllib.parse import urlparse
 import ssl
 
 
