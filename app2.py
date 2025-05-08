@@ -29,11 +29,11 @@ load_dotenv()
 url = urlparse(os.getenv("DATABASE_URL"))
 db_config = {
     'host': url.hostname,
-    'database': url.path[1:],  # 去掉開頭的 "/"
+    'database': url.path[1:], 
     'user': url.username,
     'password': url.password,
     'port': url.port,
-    'sslmode': 'require'
+    'sslmode': 'disable'
 }
 ORS_API_KEY = os.getenv("ORS_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
