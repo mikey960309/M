@@ -28,12 +28,12 @@ if not os.path.exists(UPLOAD_FOLDER):
 load_dotenv() 
 url = urlparse(os.getenv("DATABASE_URL"))
 db_config = {
-    'host': url.hostname,
-    'database': url.path[1:],
-    'user': url.username,
-    'password': url.password,
-    'port': url.port,
-    'sslmode': 'require'
+    'host': os.getenv('DB_HOST'),
+    'database': os.getenv('DB_NAME'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'port': int(os.getenv('DB_PORT', 5432)),
+    'sslmode': os.getenv('DB_SSLMODE', 'require')
 }
 ORS_API_KEY = os.getenv("ORS_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
