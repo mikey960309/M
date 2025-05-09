@@ -738,8 +738,6 @@ def case(id):
     try:
         connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
-        connection = None
-        cursor = None
         sql = """
             SELECT i.id, i.itinerary_name, i.start_time, i.end_time, i.description, 
                    i.price, i.locations, i.photos, i.userid, u.username, 
